@@ -4,38 +4,31 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.util.List;
 
-/**
- * Esta classe é como a "ficha de cadastro" das faculdades no sistema SELICE!
- * Aqui guardamos o nome, endereço e a equipe de coordenadores de cada faculdade.
- */
-@Entity // Dizemos ao JPA: "Olha, isso aqui é uma tabela do banco de dados, beleza?"
-@Table(name = "colleges") // O nome da tabela será "colleges".
+@Entity
+@Table(name = "colleges")
 public class College {
 
-    @Id // Este é o RG único da faculdade!
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // E o banco de dados se encarrega de gerar automaticamente.
-    private Long id; // Aqui está o número de identificação único.
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(name = "name", nullable = false, unique = true, length = 100)
-    private String name; // Nome da faculdade, que precisa ser especial e único (não aceitamos clones aqui!).
+    private String name;
 
     @Column(name = "address", nullable = false, length = 200)
-    private String address; // O endereço da faculdade, para sabermos onde ela mora.
+    private String address;
 
-    @JsonIgnoreProperties("college") // Evita recursão infinita ao serializar coordenadores.
+    @JsonIgnoreProperties("college")
     @OneToMany(mappedBy = "college", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Coordinator> coordinators; // Aqui está o time de coordenadores. Cada um deles tem sua história com a faculdade.
+    private List<Coordinator> coordinators;
 
-    // **Construtor padrão**: um passe livre para criar faculdades sem perguntas.
     public College() {}
 
-    // **Construtor com parâmetros**: para criar uma faculdade com nome e endereço prontinhos!
     public College(String name, String address) {
         this.name = name;
         this.address = address;
     }
 
-    // A partir daqui, temos os "portões" (getters) e as "chaves" (setters) de cada atributo.
     public Long getId() {
         return id;
     }
@@ -74,25 +67,22 @@ public class College {
         this.coordinators = coordinators;
     }
 
-    // **Adiciona Coordenador**: mais um membro entra para o time!
     public void addCoordinator(Coordinator coordinator) {
         if (coordinator != null) {
-            coordinator.setCollege(this); // Ligamos o coordenador à faculdade.
+            coordinator.setCollege(this);
             this.coordinators.add(coordinator);
         }
     }
 
-    // **Remove Coordenador**: despedidas são sempre difíceis...
     public void removeCoordinator(Coordinator coordinator) {
         if (coordinator != null) {
-            coordinator.setCollege(null); // Soltamos o vínculo.
+            coordinator.setCollege(null);
             this.coordinators.remove(coordinator);
         }
     }
 
     @Override
     public String toString() {
-        // Vamos mostrar de forma amigável as informações da faculdade!
         return "College{" +
                 "id=" + id +
                 ", name='" + name + '\'' +

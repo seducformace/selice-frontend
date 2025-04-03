@@ -39,42 +39,40 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
-        logger.info("🔐 Configurando segurança HTTP...");
+        logger.info("Configurando segurança HTTP...");
 
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Rotas públicas
                         .requestMatchers(
                                 "/api/authentication/login",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/error",
-                                "/api/faculties", // LIBERA TEMPORARIAMENTE PARA TESTE POST
+                                "/api/faculties",
                                 "/api/faculties/**"
                         ).permitAll()
-                        // Demais rotas exigem autenticação
                         .anyRequest().authenticated()
                 )
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .formLogin(form -> form.disable())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-        logger.info("✅ SecurityFilterChain configurado com sucesso.");
+        logger.info("SecurityFilterChain configurado com sucesso.");
         return http.build();
     }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        logger.info("🔑 AuthenticationManager configurado.");
+        logger.info("AuthenticationManager configurado.");
         return authenticationConfiguration.getAuthenticationManager();
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        logger.info("🔐 PasswordEncoder configurado com BCrypt.");
+        logger.info("Utilizando BCryptPasswordEncoder.");
         return new BCryptPasswordEncoder();
     }
 
@@ -88,7 +86,7 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        logger.info("🌐 Configurando CORS...");
+        logger.info("Configurando CORS...");
 
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of("http://localhost:8081"));
@@ -99,7 +97,7 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
 
-        logger.info("✅ CORS configurado corretamente.");
+        logger.info("CORS configurado corretamente.");
         return source;
     }
 }

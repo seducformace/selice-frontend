@@ -7,17 +7,17 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 /**
- * Repositório responsável por operações no banco de dados para a entidade User.
- * Estende JpaRepository para acesso rápido a métodos como save, findAll, delete, etc.
+ * Repositório responsável por interações com a tabela "users" no banco de dados.
+ * Permite operações básicas como salvar, buscar, atualizar e excluir usuários.
  */
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
     /**
-     * Busca um usuário pelo e-mail (login).
+     * Busca um usuário pelo e-mail (case insensitive).
      *
      * @param email E-mail do usuário
-     * @return Optional com o usuário, se encontrado
+     * @return Optional com o usuário encontrado, ou vazio se não existir
      */
-    Optional<User> findByEmail(String email);
+    Optional<User> findByEmailIgnoreCase(String email);
 }

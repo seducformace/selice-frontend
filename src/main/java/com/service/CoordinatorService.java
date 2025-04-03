@@ -11,8 +11,8 @@ import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
- * Serviço responsável por encapsular a lógica de negócio para coordenadores.
- * Aqui acontece a lógica principal, como cadastrar, buscar, excluir ou atualizar coordenadores.
+ * Serviço responsável por encapsular a lógica de negócio para Coordenadores.
+ * Realiza operações como criação, consulta, atualização e remoção.
  */
 @Service
 public class CoordinatorService {
@@ -20,28 +20,29 @@ public class CoordinatorService {
     private static final Logger LOGGER = Logger.getLogger(CoordinatorService.class.getName());
 
     @Autowired
-    private CoordinatorRepository coordinatorRepository; // Nosso fiel escudeiro para acessar o banco de dados!
+    private CoordinatorRepository coordinatorRepository;
 
     /**
-     * Cadastrar um novo coordenador.
-     * Estamos adicionando mais um guia ao sistema!
+     * Cadastra um novo coordenador.
+     * Realiza validações obrigatórias antes de persistir os dados.
      */
     public Coordinator createCoordinator(Coordinator coordinator) {
+        // Verifica se o coordenador está vinculado a uma instituição
         if (coordinator.getSchool() == null && coordinator.getCollege() == null) {
             throw new IllegalArgumentException("O coordenador deve estar vinculado a uma escola ou faculdade.");
         }
 
-        // Verificar se o e-mail já está em uso
+        // Garante que não haja duplicidade de e-mail
         if (coordinatorRepository.findByEmail(coordinator.getEmail()).isPresent()) {
             throw new DataIntegrityViolationException("Já existe um coordenador com o e-mail " + coordinator.getEmail());
         }
 
-        LOGGER.info("Criando um novo coordenador: " + coordinator.getName());
+        LOGGER.info("Criando novo coordenador: " + coordinator.getName());
         return coordinatorRepository.save(coordinator);
     }
 
     /**
-     * Buscar todos os coordenadores.
+     * Retorna todos os coordenadores cadastrados.
      */
     public List<Coordinator> getAllCoordinators() {
         LOGGER.info("Buscando todos os coordenadores");
@@ -49,7 +50,7 @@ public class CoordinatorService {
     }
 
     /**
-     * Buscar coordenador por ID.
+     * Busca um coordenador específico pelo ID.
      */
     public Optional<Coordinator> getCoordinatorById(Long id) {
         LOGGER.info("Buscando coordenador com ID: " + id);
@@ -57,7 +58,7 @@ public class CoordinatorService {
     }
 
     /**
-     * Buscar coordenador pelo e-mail.
+     * Busca um coordenador pelo e-mail.
      */
     public Optional<Coordinator> getCoordinatorByEmail(String email) {
         LOGGER.info("Buscando coordenador com e-mail: " + email);
@@ -65,24 +66,24 @@ public class CoordinatorService {
     }
 
     /**
-     * Excluir um coordenador por ID.
+     * Remove um coordenador pelo ID.
      */
     public void deleteCoordinator(Long id) {
         if (!coordinatorRepository.existsById(id)) {
             throw new IllegalArgumentException("Coordenador não encontrado com o ID " + id);
         }
+
         LOGGER.info("Excluindo coordenador com ID: " + id);
         coordinatorRepository.deleteById(id);
     }
 
     /**
-     * Atualizar as informações de um coordenador.
+     * Atualiza os dados de um coordenador existente.
      */
     public Coordinator updateCoordinator(Long id, Coordinator updatedCoordinator) {
         Coordinator existingCoordinator = coordinatorRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Coordenador não encontrado com o ID " + id));
 
-        // Atualizar apenas os campos necessários
         existingCoordinator.setName(updatedCoordinator.getName());
         existingCoordinator.setEmail(updatedCoordinator.getEmail());
         existingCoordinator.setPhoneNumber(updatedCoordinator.getPhoneNumber());

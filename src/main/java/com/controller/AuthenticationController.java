@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,10 +23,11 @@ import java.util.Optional;
 
 /**
  * Controlador responsável por autenticar usuários e gerar o token JWT.
+ * Versão segura com validação de senha via AuthenticationManager.
  */
 @RestController
 @RequestMapping("/api/authentication")
-@CrossOrigin(origins = "http://localhost:8081") // Libera frontend local
+@CrossOrigin(origins = "http://localhost:8081")
 public class AuthenticationController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
@@ -37,10 +37,11 @@ public class AuthenticationController {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRepository userRepository;
 
-    public AuthenticationController(AuthenticationManager authenticationManager,
-                                    UserDetailsServiceImpl userDetailsService,
-                                    JwtTokenProvider jwtTokenProvider,
-                                    UserRepository userRepository) {
+    public AuthenticationController(
+            AuthenticationManager authenticationManager,
+            UserDetailsServiceImpl userDetailsService,
+            JwtTokenProvider jwtTokenProvider,
+            UserRepository userRepository) {
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
         this.jwtTokenProvider = jwtTokenProvider;
@@ -48,14 +49,14 @@ public class AuthenticationController {
     }
 
     /**
-     * Endpoint POST para autenticação de usuários.
+     * Endpoint POST para autenticação de usuários com validação de senha.
      */
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
-        logger.info("Tentativa de login para: {}", loginRequest.getEmail());
+        logger.info("🔒 Tentativa de login com e-mail: {}", loginRequest.getEmail());
 
         try {
-            // Autentica usuário (email + senha)
+            // Autentica usando e-mail e senha com Spring Security
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getEmail(),
@@ -65,33 +66,27 @@ public class AuthenticationController {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // Carrega os detalhes (padrão Spring Security)
+            // Carrega os detalhes do usuário
             UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getEmail());
 
-            // Recupera usuário do banco (para extrair a role real)
-            Optional<User> userOptional = userRepository.findByEmail(loginRequest.getEmail());
+            // Busca a role real do banco
+            Optional<User> userOptional = userRepository.findByEmailIgnoreCase(loginRequest.getEmail());
             if (userOptional.isEmpty()) {
-                logger.warn("Usuário não encontrado no banco de dados.");
+                logger.warn("❌ Usuário não encontrado no banco: {}", loginRequest.getEmail());
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(new LoginResponse("Usuário não encontrado no banco.", null));
             }
 
-            String role = "ROLE_" + userOptional.get().getRole().toUpperCase(); // Ex: ADMIN → ROLE_ADMIN
+            String role = "ROLE_" + userOptional.get().getRole().toUpperCase();
             String token = jwtTokenProvider.generateToken(userDetails.getUsername(), role);
 
-            logger.info("Login realizado com sucesso: {}", userDetails.getUsername());
-
+            logger.info("✅ Login realizado com sucesso para: {}", userDetails.getUsername());
             return ResponseEntity.ok(new LoginResponse("Login realizado com sucesso!", token));
 
-        } catch (BadCredentialsException e) {
-            logger.warn("Credenciais inválidas para: {}", loginRequest.getEmail());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new LoginResponse("Email ou senha incorretos.", null));
-
         } catch (Exception e) {
-            logger.error("Erro inesperado durante a autenticação para: {}", loginRequest.getEmail(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new LoginResponse("Erro interno no servidor. Verifique os logs.", null));
+            logger.error("❌ Erro de autenticação para: {}", loginRequest.getEmail(), e);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new LoginResponse("E-mail ou senha inválidos.", null));
         }
     }
 }

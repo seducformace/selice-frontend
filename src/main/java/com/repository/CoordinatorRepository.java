@@ -7,19 +7,20 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 /**
- * Repositório para a entidade Coordinator.
- * Aqui é onde o sistema conversa diretamente com o banco de dados.
- * Fornece métodos prontos e eficientes para operações básicas e personalizadas!
+ * Repositório responsável por realizar operações de persistência
+ * para a entidade Coordinator no banco de dados.
+ *
+ * Estende JpaRepository, que fornece métodos prontos como:
+ * save, findById, findAll, deleteById, entre outros.
  */
 @Repository
 public interface CoordinatorRepository extends JpaRepository<Coordinator, Long> {
 
     /**
-     * Método personalizado para buscar um coordenador pelo e-mail.
-     * Retorna um Optional que pode conter o coordenador encontrado ou estar vazio,
-     * caso não exista um coordenador com o e-mail fornecido.
+     * Busca um coordenador pelo e-mail.
+     * Retorna um Optional, que evita problemas com valores nulos.
      *
-     * @param email O e-mail do coordenador.
+     * @param email E-mail do coordenador a ser buscado.
      * @return Optional contendo o coordenador, se encontrado.
      */
     Optional<Coordinator> findByEmail(String email);

@@ -16,16 +16,24 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    // Lista todos os usuários cadastrados
     @GetMapping
     public List<User> getAllUsers() {
         return userService.getAllUsers();
     }
 
+    // Cria novo usuário com senha já criptografada (BCrypt)
     @PostMapping
-    public User createUser(@RequestBody User user) {
-        return userService.createUser(user);
+    public ResponseEntity<User> createUser(@RequestBody User user) {
+        try {
+            User createdUser = userService.createUser(user);
+            return ResponseEntity.ok(createdUser);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
+    // Busca usuário por ID
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
         Optional<User> user = userService.getUserById(id);
@@ -33,16 +41,16 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // Exclui usuário por ID
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
 
+    // OBSOLETO: Essa autenticação deve ser feita apenas pelo AuthenticationController com JWT
     @PostMapping("/authenticate")
     public ResponseEntity<User> authenticateUser(@RequestParam String email, @RequestParam String password) {
-        Optional<User> user = userService.authenticateUser(email, password);
-        return user.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.status(401).build());
+        return ResponseEntity.status(501).build(); // Método não implementado, pois o login usa JWT
     }
 }

@@ -4,6 +4,8 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +18,8 @@ import java.util.Date;
  */
 @Component
 public class JwtTokenProvider {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
 
     private final Key secretKey;
 
@@ -50,7 +54,7 @@ public class JwtTokenProvider {
     public String generateToken(String email, String role) {
         return Jwts.builder()
                 .setSubject(email)
-                .claim("role", role) // Pode ser lido posteriormente se precisar validar permissões
+                .claim("role", role)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
@@ -78,12 +82,12 @@ public class JwtTokenProvider {
             Jwts.parserBuilder()
                     .setSigningKey(secretKey)
                     .build()
-                    .parseClaimsJws(token); // Vai lançar exceções se for inválido ou expirado
+                    .parseClaimsJws(token);
             return true;
         } catch (ExpiredJwtException e) {
-            System.out.println("Token expirado: " + e.getMessage());
+            logger.warn("Token expirado: {}", e.getMessage());
         } catch (JwtException e) {
-            System.out.println("Erro ao validar token: " + e.getMessage());
+            logger.warn("Erro ao validar token: {}", e.getMessage());
         }
         return false;
     }

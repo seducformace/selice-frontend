@@ -2,51 +2,55 @@ package com.service;
 
 import com.model.User;
 import com.repository.UserRepository;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.core.userdetails.User.UserBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Serviço responsável por carregar usuários do banco
- * para o processo de autenticação do Spring Security.
+ * Implementação personalizada de UserDetailsService
+ * que carrega os detalhes do usuário para autenticação.
  */
 @Primary
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
 
+    private static final Logger logger = LoggerFactory.getLogger(UserDetailsServiceImpl.class);
+
     private final UserRepository userRepository;
 
-    // Injeta o repositório de usuários
     public UserDetailsServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
     /**
-     * Método chamado automaticamente pelo Spring Security
-     * ao autenticar um usuário.
-     *
-     * @param email E-mail do usuário (username)
-     * @return Detalhes do usuário (UserDetails)
-     * @throws UsernameNotFoundException Se o usuário não existir
+     * Carrega usuário pelo email fornecido durante o login.
+     * @param email E-mail fornecido para autenticação.
+     * @return UserDetails com dados do usuário encontrados no banco.
+     * @throws UsernameNotFoundException caso o usuário não exista.
      */
     @Override
     @Transactional
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + email));
+        logger.info("Tentando carregar usuário por email: {}", email);
 
-        // Constrói um usuário do Spring Security com email, senha e roles
-        UserBuilder builder = org.springframework.security.core.userdetails.User.withUsername(user.getEmail());
-        builder.password(user.getPassword());
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> {
+                    logger.warn("Usuário não encontrado: {}", email);
+                    return new UsernameNotFoundException("Usuário não encontrado: " + email);
+                });
 
-        // Adiciona a role única (vinda do campo `user.getRole()`)
-        builder.roles(user.getRole()); // ⚠️ Certifique-se que está sem prefixo "ROLE_" no banco
+        logger.info("Usuário encontrado: {}", user.getEmail());
 
-        return builder.build();
+        // Retorna um objeto UserDetails configurado com a senha criptografada armazenada no banco
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getEmail())
+                .password(user.getPassword())  // Senha criptografada
+                .roles(user.getRole())
+                .build();
     }
 }

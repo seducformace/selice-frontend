@@ -5,47 +5,44 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-/**
- * O coordenador é como o "guia" que ajuda a manter as coisas em ordem,
- * seja em uma escola ou em uma faculdade no sistema SELICE.
- */
 @Entity
-@Table(name = "coordinators") // A tabela no banco será chamada "coordinators".
+@Table(name = "coordinators")
 public class Coordinator {
 
-    @Id // Nosso RG único para cada coordenador!
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // O banco gera o ID automaticamente.
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name", nullable = false) // Nome do coordenador. Afinal, todo mundo tem um nome, né?
+    @Column(name = "name", nullable = false)
     @NotBlank(message = "Nome é obrigatório.")
     private String name;
 
-    @Column(name = "email", nullable = false, unique = true) // E-mail do coordenador, que serve como identificação única.
+    @Column(name = "email", nullable = false, unique = true)
     @Email(message = "E-mail inválido.")
     @NotBlank(message = "E-mail é obrigatório.")
     private String email;
 
-    @Column(name = "phone_number", nullable = true, length = 15) // Telefone para contato.
+    @Column(name = "phone_number", length = 15)
     private String phoneNumber;
 
-    @Column(name = "department", nullable = true, length = 100) // Departamento ou área de atuação.
+    @Column(name = "department", length = 100)
     private String department;
 
+    @Column(name = "status")
+    private String status = "ATIVO";
+
     @ManyToOne
-    @JoinColumn(name = "school_id", nullable = true) // Este coordenador pode estar vinculado a uma escola.
+    @JoinColumn(name = "school_id")
     @JsonBackReference(value = "school-coordinator")
     private School school;
 
     @ManyToOne
-    @JoinColumn(name = "college_id", nullable = true) // Ou ele pode estar vinculado a uma faculdade.
+    @JoinColumn(name = "college_id") // Compatível com o banco
     @JsonBackReference(value = "college-coordinator")
     private College college;
 
-    // **Construtor padrão**: Uma espécie de "passaporte" para criar o coordenador sem informações extras.
     public Coordinator() {}
 
-    // **Construtor parametrizado**: Para quem já sabe nome, e-mail e onde o coordenador trabalha!
     public Coordinator(String name, String email, String phoneNumber, String department, School school, College college) {
         this.name = name;
         this.email = email;
@@ -55,7 +52,6 @@ public class Coordinator {
         this.college = college;
     }
 
-    // Aqui temos as chaves (setters) e portões (getters) para acessar e modificar os atributos.
     public Long getId() {
         return id;
     }
@@ -96,6 +92,14 @@ public class Coordinator {
         this.department = department;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public School getSchool() {
         return school;
     }
@@ -114,13 +118,13 @@ public class Coordinator {
 
     @Override
     public String toString() {
-        // Queremos que as informações sejam fáceis de entender ao exibir o coordenador.
         return "Coordinator{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", email='" + email + '\'' +
                 ", phoneNumber='" + phoneNumber + '\'' +
                 ", department='" + department + '\'' +
+                ", status='" + status + '\'' +
                 ", school=" + (school != null ? school.getName() : "Nenhuma") +
                 ", college=" + (college != null ? college.getName() : "Nenhuma") +
                 '}';
