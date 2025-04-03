@@ -1,18 +1,17 @@
 module.exports = {
-  root: true,
+  root: true, // Define que esta é a configuração raiz do ESLint
   env: {
-    node: true,
+    node: true, // Ambiente Node.js
   },
   extends: [
-    "plugin:vue/vue3-essential",
-    "eslint:recommended",
-    "plugin:prettier/recommended",
+    'plugin:vue/vue3-essential', // Regras essenciais do Vue 3
+    'eslint:recommended', // Regras recomendadas do ESLint
+    'plugin:prettier/recommended', // Integração do Prettier com ESLint
   ],
   parserOptions: {
-    parser: "@babel/eslint-parser",
+    parser: '@babel/eslint-parser', // Utiliza o parser Babel para suporte avançado a JavaScript
   },
   rules: {
-    "no-console": process.env.NODE_ENV === "production" ? "warn" : "off",
-    "no-debugger": process.env.NODE_ENV === "production" ? "warn" : "off",
+    'vue/multi-word-component-names': 'off', // Desativa a regra de nomes multi-palavra
   },
 };

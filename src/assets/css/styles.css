@@ -1,0 +1,208 @@
+<template>
+  <div class="page-container">
+    <!-- Contêiner principal que engloba todos os elementos da página -->
+    <div class="logo-container">
+      <img src="/seduc.png" alt="Logo SEDUC" />
+    </div>
+    <div class="home-container">
+      <h1 class="main-title">
+        <span class="letter-s">S</span>
+        <span class="letter-e">E</span>
+        <span class="letter-l">L</span>
+        <span class="letter-i">I</span>
+        <span class="letter-c">C</span>
+        <span class="letter-e">E</span>
+      </h1>
+      <h2 class="subtitle">
+        Sistema de Estágio e Licenciatura do Ceará
+      </h2>
+      <form @submit.prevent="handleLogin">
+        <div class="form-group">
+          <input
+            type="email"
+            v-model="email"
+            placeholder="Digite seu email"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <input
+            type="password"
+            v-model="password"
+            placeholder="Digite sua senha"
+            required
+          />
+        </div>
+        <button type="submit" class="btn-login">Entrar</button>
+        <button @click.prevent="recoverPassword" class="btn-recover">
+          Recuperar Senha
+        </button>
+      </form>
+      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  name: "HomePage",
+  data() {
+    return {
+      email: "",
+      password: "",
+      errorMessage: "",
+    };
+  },
+  methods: {
+    handleLogin() {
+      const adminCredentials = {
+        email: "admin@selice.com",
+        password: "123456",
+      };
+      if (
+        this.email === adminCredentials.email &&
+        this.password === adminCredentials.password
+      ) {
+        localStorage.setItem("adminLoggedIn", "true");
+        this.$router.push("/admin/dashboard");
+      } else {
+        this.errorMessage = "Email ou senha inválidos. Tente novamente.";
+      }
+    },
+    recoverPassword() {
+      alert("Função de recuperação de senha em desenvolvimento.");
+    },
+  },
+};
+</script>
+
+<style scoped>
+/* Página principal */
+.page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100vh;
+  background-color: #f9f9f9;
+  padding: 20px;
+}
+
+/* Estilização do logo */
+.logo-container img {
+  width: 250px;
+  height: auto;
+  margin-bottom: 20px;
+}
+
+/* Contêiner principal */
+.home-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 100px;
+}
+
+/* Título estilizado */
+.main-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 5px 0;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Estilo individual para letras */
+.letter-s {
+  color: #f47c20;
+}
+.letter-e {
+  color: #fbc252;
+}
+.letter-l {
+  color: #007b33;
+}
+.letter-i {
+  color: #00a859;
+}
+.letter-c,
+.letter-e:last-child {
+  color: #000000;
+}
+
+/* Subtítulo */
+.subtitle {
+  font-size: 1.2rem;
+  color: #555;
+  text-align: center;
+  margin: 5px 0;
+}
+
+/* Formulário */
+form {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+input:focus {
+  outline: none;
+  border-color: #4caf50;
+}
+
+/* Botão Entrar */
+.btn-login {
+  padding: 10px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-login:hover {
+  background-color: #45a049;
+}
+
+/* Botão Recuperar Senha */
+.btn-recover {
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-recover:hover {
+  background-color: #0056b3;
+}
+
+/* Mensagem de erro */
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-top: 10px;
+  text-align: center;
+}
+</style>
