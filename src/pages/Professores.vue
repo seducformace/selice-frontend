@@ -113,6 +113,7 @@
 <script>
 import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
+import { api } from '@/services/api'; // ✅ Importa a instância configurada do Axios
 
 export default {
   name: 'ProfessorsPage',
@@ -134,26 +135,7 @@ export default {
         orientedStudents: 0,
         studentsInProgress: 0,
       },
-      professors: [
-        {
-          name: 'Carlos Souza',
-          registration: 'PROF001',
-          certification: 'Doutorado',
-          subjects: ['Matemática', 'Física'],
-          schools: ['Escola A', 'Escola B'],
-          orientedStudents: 8,
-          studentsInProgress: 2,
-        },
-        {
-          name: 'Mariana Lima',
-          registration: 'PROF002',
-          certification: 'Mestrado',
-          subjects: ['História'],
-          schools: ['Escola C'],
-          orientedStudents: 10,
-          studentsInProgress: 0,
-        },
-      ],
+      professors: [], // ✅ Agora a lista começa vazia e será preenchida via API
     };
   },
   computed: {
@@ -205,6 +187,17 @@ export default {
         studentsInProgress: 0,
       };
     },
+    async fetchProfessors() {
+      try {
+        const response = await api.get('/professors');
+        this.professors = response.data; // ✅ Lista atualizada com o que vem do backend
+      } catch (error) {
+        console.error('Erro ao buscar professores:', error);
+      }
+    },
+  },
+  mounted() {
+    this.fetchProfessors(); // ✅ Busca professores ao carregar a página
   },
 };
 </script>

@@ -1,14 +1,12 @@
-// src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router';
 
 // Importações das views
 import Dashboard from '@/views/Dashboard.vue';
 import Faculties from '@/views/Faculties.vue';
-import CoordinatorPage from '@/views/CoordinatorPage.vue'; // ✅ Nome atualizado corretamente
+import CoordinatorPage from '@/views/CoordinatorPage.vue';
 import StudentsPage from '@/views/StudentsPage.vue';
-import Professors from '@/views/Professors.vue';
-import ProfessorsManagement from '@/views/ProfessorsManagement.vue';
-import Schools from '@/views/Schools.vue';
+import ProfessorsPage from '@/views/ProfessorsPage.vue';
+import SchoolsPage from '@/views/SchoolsPage.vue'; // ✅ Nome atualizado corretamente
 import Reports from '@/views/Reports.vue';
 
 const routes = [
@@ -26,7 +24,7 @@ const routes = [
     redirect: '/login',
   },
 
-  // Rotas protegidas
+  // Rotas protegidas (necessitam autenticação via JWT)
   {
     path: '/dashboard',
     name: 'Dashboard',
@@ -53,20 +51,14 @@ const routes = [
   },
   {
     path: '/professors',
-    name: 'Professors',
-    component: Professors,
+    name: 'ProfessorsPage',
+    component: ProfessorsPage,
     meta: { title: 'Gerenciamento de Professores', requiresAuth: true },
   },
   {
-    path: '/professors-management',
-    name: 'ProfessorsManagement',
-    component: ProfessorsManagement,
-    meta: { title: 'Gestão de Professores', requiresAuth: true },
-  },
-  {
     path: '/schools',
-    name: 'Schools',
-    component: Schools,
+    name: 'SchoolsPage', // ✅ Renomeado para manter consistência
+    component: SchoolsPage,
     meta: { title: 'Gerenciamento de Escolas', requiresAuth: true },
   },
   {
@@ -82,12 +74,12 @@ const router = createRouter({
   routes,
 });
 
-// Middleware para proteger rotas com base no token de autenticação
+// Middleware de proteção de rotas baseado em token JWT
 router.beforeEach((to, from, next) => {
   document.title = to.meta.title || 'Sistema de Gerenciamento';
 
   const token = localStorage.getItem('token');
-  const isAuthenticated = token !== null && token !== '';
+  const isAuthenticated = !!token;
 
   if (to.meta.requiresAuth && !isAuthenticated) {
     next('/login');

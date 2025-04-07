@@ -184,46 +184,28 @@
 <script>
 import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
+import { api } from '@/services/api';
 
 export default {
   name: 'ProfessorsPage',
-  components: { Header, Footer },
+  components: {
+    Header,
+    Footer,
+  },
   data() {
     return {
-      // Busca
       searchQuery: '',
-      // Modal
       isModalOpen: false,
       isEditing: false,
-      // Dados do professor atual
       currentProfessor: {
         name: '',
         registration: '',
-        certification: 'Especialista',
+        certification: '',
         discipline: '',
-        schools: [], // array
+        schools: [],
         orientedStudents: 0,
       },
-      // Lista de professores já cadastrados
-      professors: [
-        {
-          name: 'Carlos Souza',
-          registration: 'PROF001',
-          certification: 'Doutorado',
-          discipline: 'Física',
-          schools: ['Escola A', 'Escola B'],
-          orientedStudents: 8,
-        },
-        {
-          name: 'Mariana Lima',
-          registration: 'PROF002',
-          certification: 'Mestrado',
-          discipline: 'História',
-          schools: ['Escola C'],
-          orientedStudents: 0,
-        },
-      ],
-      // Para o select de disciplina (licenciaturas)
+      professors: [],
       licensureCourses: [
         'Pedagogia',
         'Matemática',
@@ -236,92 +218,104 @@ export default {
         'Inglês',
         'Espanhol',
         'Educação Física',
-        // etc...
       ],
-      // Lista de escolas públicas do CE (exemplo)
       cearaPublicSchools: [
         'EEFM Paulo Sarasate',
         'EEFM Governador Adauto Bezerra',
         'EEFM Liceu do Ceará',
         'EEFM Domingos Sávio',
         'EEFM César Cals',
-        // ...
       ],
-      // Campo auxiliar para armazenar a seleção no combo
       selectedSchool: '',
     };
   },
   computed: {
-    // Filtro de busca
     filteredProfessors() {
-      return this.professors.filter((prof) =>
-        prof.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+      return this.professors.filter((professor) =>
+        professor.name.toLowerCase().includes(this.searchQuery.toLowerCase())
       );
     },
   },
   methods: {
-    // Navegação
     goToDashboard() {
       this.$router.push('/dashboard');
     },
-    // Abre modal (modo adicionar)
     openModal() {
       this.isModalOpen = true;
       this.isEditing = false;
-      // Reseta professor
       this.resetCurrentProfessor();
     },
-    // Fecha modal
     closeModal() {
       this.isModalOpen = false;
     },
-    // Edita professor
     editProfessor(index) {
-      this.isEditing = true;
-      // Copiamos os dados
       this.currentProfessor = { ...this.professors[index] };
+      this.isEditing = true;
       this.isModalOpen = true;
     },
-    // Salva professor
-    saveProfessor() {
-      if (this.isEditing) {
-        // Localiza pela matrícula
-        const idx = this.professors.findIndex(
-          (p) => p.registration === this.currentProfessor.registration
-        );
-        if (idx !== -1) {
-          this.professors[idx] = { ...this.currentProfessor };
+    async saveProfessor() {
+      try {
+        const payload = {
+          name: this.currentProfessor.name,
+          registration: this.currentProfessor.registration,
+          degree: this.currentProfessor.certification,
+          discipline: this.currentProfessor.discipline,
+          schools: this.currentProfessor.schools,
+          orientedStudents: this.currentProfessor.orientedStudents,
+          // Adicione outros campos aqui se necessário
+        };
+
+        if (this.isEditing) {
+          // PUT para atualizar professor
+          await api.put(`/professors/${this.currentProfessor.id}`, payload);
+        } else {
+          // POST para criar novo professor
+          await api.post('/professors', payload);
         }
-      } else {
-        this.professors.push({ ...this.currentProfessor });
+
+        this.closeModal();
+        this.fetchProfessors(); // Recarrega a lista do banco
+      } catch (error) {
+        console.error('Erro ao salvar professor:', error);
+        alert(
+          'Erro ao salvar professor. Verifique os dados e tente novamente.'
+        );
       }
-      this.closeModal();
     },
-    // Deleta professor
-    deleteProfessor(index) {
-      this.professors.splice(index, 1);
-    },
-    // Reseta professor
     resetCurrentProfessor() {
       this.currentProfessor = {
         name: '',
         registration: '',
-        certification: 'Especialista',
+        certification: '',
         discipline: '',
         schools: [],
         orientedStudents: 0,
       };
+      this.selectedSchool = '';
     },
-    // Adiciona escola selecionada ao array
-    addSchool() {
-      if (this.selectedSchool) {
-        // Se não quiser duplicadas, cheque se já existe
-        if (!this.currentProfessor.schools.includes(this.selectedSchool)) {
-          this.currentProfessor.schools.push(this.selectedSchool);
-        }
-        this.selectedSchool = '';
+    async fetchProfessors() {
+      try {
+        const response = await api.get('/professors');
+        this.professors = response.data;
+      } catch (error) {
+        console.error('Erro ao carregar professores:', error);
       }
     },
+    addSchool() {
+      if (
+        this.selectedSchool &&
+        !this.currentProfessor.schools.includes(this.selectedSchool)
+      ) {
+        this.currentProfessor.schools.push(this.selectedSchool);
+      }
+      this.selectedSchool = '';
+    },
+    deleteProfessor(index) {
+      this.professors.splice(index, 1);
+    },
+  },
+  mounted() {
+    this.fetchProfessors();
   },
 };
 </script>

@@ -113,6 +113,7 @@
 <script>
 import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
+import { api } from '@/services/api'; // Importa o Axios com JWT
 
 export default {
   name: 'ProfessorsPage',
@@ -134,26 +135,7 @@ export default {
         orientedStudents: 0,
         studentsInProgress: 0,
       },
-      professors: [
-        {
-          name: 'Carlos Souza',
-          registration: 'PROF001',
-          certification: 'Doutorado',
-          subjects: ['Matemática', 'Física'],
-          schools: ['Escola A', 'Escola B'],
-          orientedStudents: 8,
-          studentsInProgress: 2,
-        },
-        {
-          name: 'Mariana Lima',
-          registration: 'PROF002',
-          certification: 'Mestrado',
-          subjects: ['História'],
-          schools: ['Escola C'],
-          orientedStudents: 10,
-          studentsInProgress: 0,
-        },
-      ],
+      professors: [], // agora sem dados mockados
     };
   },
   computed: {
@@ -163,7 +145,13 @@ export default {
       );
     },
   },
+  mounted() {
+    this.fetchProfessors(); // busca os dados reais ao carregar a página
+  },
   methods: {
+    goToDashboard() {
+      this.$router.push('/dashboard');
+    },
     openModal() {
       this.isModalOpen = true;
       this.isEditing = false;
@@ -177,22 +165,13 @@ export default {
       this.currentProfessor = { ...this.professors[index] };
       this.isModalOpen = true;
     },
-    saveProfessor() {
-      if (this.isEditing) {
-        const index = this.professors.findIndex(
-          (p) => p.registration === this.currentProfessor.registration
-        );
-        this.professors[index] = { ...this.currentProfessor };
-      } else {
-        this.professors.push({ ...this.currentProfessor });
+    async fetchProfessors() {
+      try {
+        const response = await api.get('/professors');
+        this.professors = response.data;
+      } catch (error) {
+        console.error('Erro ao buscar professores:', error);
       }
-      this.closeModal();
-    },
-    deleteProfessor(index) {
-      this.professors.splice(index, 1);
-    },
-    goToDashboard() {
-      this.$router.push('/dashboard');
     },
     resetCurrentProfessor() {
       this.currentProfessor = {
@@ -204,6 +183,31 @@ export default {
         orientedStudents: 0,
         studentsInProgress: 0,
       };
+    },
+    async saveProfessor() {
+      try {
+        if (this.isEditing) {
+          await api.put(
+            `/professors/${this.currentProfessor.id}`,
+            this.currentProfessor
+          );
+        } else {
+          await api.post('/professors', this.currentProfessor);
+        }
+        this.fetchProfessors();
+        this.closeModal();
+      } catch (error) {
+        console.error('Erro ao salvar professor:', error);
+      }
+    },
+    async deleteProfessor(index) {
+      try {
+        const id = this.professors[index].id;
+        await api.delete(`/professors/${id}`);
+        this.fetchProfessors();
+      } catch (error) {
+        console.error('Erro ao deletar professor:', error);
+      }
     },
   },
 };

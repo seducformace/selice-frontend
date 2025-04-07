@@ -1,11 +1,9 @@
 <template>
   <div class="coordinators-page">
-    <!-- Cabeçalho -->
     <Header />
 
     <div class="content-wrapper">
       <div class="content">
-        <!-- Botão Home + Título -->
         <div class="header-actions">
           <button class="home-button" @click="goHome">
             <i class="fas fa-home"></i>
@@ -13,7 +11,6 @@
           <h1>Gestão de Coordenadores</h1>
         </div>
 
-        <!-- Botão Adicionar + Campo de Busca -->
         <div class="actions">
           <button class="add-button" @click="openModal">
             Adicionar Coordenador
@@ -26,7 +23,6 @@
           />
         </div>
 
-        <!-- Tabela de Coordenadores -->
         <div class="table-container">
           <table class="coordinators-table">
             <thead>
@@ -84,7 +80,6 @@
             </tbody>
           </table>
 
-          <!-- Paginação -->
           <div class="pagination" v-if="totalPages > 1">
             <button
               v-for="page in totalPages"
@@ -97,7 +92,6 @@
           </div>
         </div>
 
-        <!-- Modal de Cadastro/Edição -->
         <div v-if="isModalOpen" class="modal-overlay">
           <div class="modal-aligned modal-form-box">
             <h2>
@@ -105,7 +99,6 @@
             </h2>
 
             <form @submit.prevent="saveCoordinator" class="coordinator-form">
-              <!-- Nome -->
               <div class="form-group">
                 <label for="name">Nome</label>
                 <input
@@ -116,7 +109,6 @@
                 />
               </div>
 
-              <!-- E-mail -->
               <div class="form-group">
                 <label for="email">E-mail</label>
                 <input
@@ -127,7 +119,6 @@
                 />
               </div>
 
-              <!-- Telefone -->
               <div class="form-group">
                 <label for="phone">Telefone</label>
                 <input
@@ -138,7 +129,6 @@
                 />
               </div>
 
-              <!-- Faculdade -->
               <div class="form-group">
                 <label for="college">Faculdade</label>
                 <select
@@ -157,7 +147,24 @@
                 </select>
               </div>
 
-              <!-- Curso Responsável -->
+              <div class="form-group">
+                <label for="school">Escola</label>
+                <select
+                  id="school"
+                  v-model="currentCoordinator.schoolId"
+                  required
+                >
+                  <option disabled value="">Selecione a Escola</option>
+                  <option
+                    v-for="school in schoolsList"
+                    :key="school.id"
+                    :value="school.id"
+                  >
+                    {{ school.name }}
+                  </option>
+                </select>
+              </div>
+
               <div class="form-group">
                 <label for="department">Curso Responsável</label>
                 <input
@@ -168,7 +175,6 @@
                 />
               </div>
 
-              <!-- Status -->
               <div class="form-group">
                 <label for="status">Status</label>
                 <select
@@ -181,7 +187,6 @@
                 </select>
               </div>
 
-              <!-- Botões -->
               <div class="form-buttons">
                 <button type="submit" class="save-button">Salvar</button>
                 <button type="button" class="cancel-button" @click="closeModal">
@@ -192,11 +197,8 @@
           </div>
         </div>
       </div>
-      <!-- .content -->
     </div>
-    <!-- .content-wrapper -->
 
-    <!-- Rodapé -->
     <Footer class="footer-fixed" />
   </div>
 </template>
@@ -204,7 +206,7 @@
 <script>
 import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
-import { api } from '@/services/api'; // Importa instância da API
+import { api } from '@/services/api';
 
 export default {
   name: 'CoordinatorPage',
@@ -217,8 +219,8 @@ export default {
       searchQuery: '',
       isModalOpen: false,
       isEditing: false,
-      currentPage: 1, // <- página atual
-      itemsPerPage: 5, // <- itens por página
+      currentPage: 1,
+      itemsPerPage: 5,
       currentCoordinator: {
         id: null,
         name: '',
@@ -226,10 +228,12 @@ export default {
         phoneNumber: '',
         department: '',
         status: 'Ativo',
-        collegeId: null, // <-- USAR ID ao invés do objeto completo, como sugerido
+        collegeId: null,
+        schoolId: null, // campo de escola adicionado
       },
       coordinators: [],
       collegesList: [],
+      schoolsList: [], // lista de escolas
     };
   },
 
@@ -260,6 +264,7 @@ export default {
         this.coordinators = response.data.map((c) => ({
           ...c,
           college: c.college || null,
+          school: c.school || null,
           course: c.department || '—',
           phone: c.phoneNumber || '',
           status: c.status || 'Ativo',
@@ -272,9 +277,18 @@ export default {
     async fetchFaculties() {
       try {
         const response = await api.get('/faculties');
-        this.collegesList = response.data; // <- ALTERADO
+        this.collegesList = response.data;
       } catch (error) {
         console.error('Erro ao carregar faculdades:', error);
+      }
+    },
+
+    async fetchSchools() {
+      try {
+        const response = await api.get('/schools');
+        this.schoolsList = response.data;
+      } catch (error) {
+        console.error('Erro ao carregar escolas:', error);
       }
     },
 
@@ -298,9 +312,8 @@ export default {
         phoneNumber: selected.phone,
         department: selected.course,
         status: selected.status,
-        college:
-          this.collegesList.find((f) => f.name === selected.college?.name) ||
-          null,
+        collegeId: selected.college?.id || null,
+        schoolId: selected.school?.id || null,
       };
       this.isModalOpen = true;
     },
@@ -316,9 +329,12 @@ export default {
           college: this.currentCoordinator.collegeId
             ? { id: this.currentCoordinator.collegeId }
             : null,
+          school: this.currentCoordinator.schoolId
+            ? { id: this.currentCoordinator.schoolId }
+            : null,
         };
 
-        console.log('Payload enviado:', payload); // 👀 Debug opcional
+        console.log('Payload enviado:', payload);
 
         if (this.isEditing && this.currentCoordinator.id) {
           await api.put(`/coordinators/${this.currentCoordinator.id}`, payload);
@@ -357,13 +373,16 @@ export default {
         phoneNumber: '',
         department: '',
         status: 'Ativo',
-        college: null, // <- ALTERADO
+        collegeId: null,
+        schoolId: null,
       };
     },
   },
+
   mounted() {
     this.fetchCoordinators();
     this.fetchFaculties();
+    this.fetchSchools();
   },
 };
 </script>

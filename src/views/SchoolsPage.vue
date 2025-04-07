@@ -7,7 +7,6 @@
       <div class="content">
         <!-- Barra Superior: Botão Home + Título -->
         <div class="header-actions">
-          <!-- Botão Home com ícone de casa FontAwesome -->
           <button class="home-button" @click="goToDashboard">
             <i class="fas fa-home"></i>
           </button>
@@ -34,18 +33,23 @@
               <thead>
                 <tr>
                   <th class="col-name">Nome</th>
+                  <th class="col-inep">INEP</th>
                   <th class="col-city">Município</th>
+                  <th class="col-address">Endereço</th>
                   <th class="col-type">Tipo</th>
                   <th class="col-status">Status</th>
                   <th class="col-phone">Telefone</th>
                   <th class="col-email">E-mail</th>
+                  <th class="col-colleges">Faculdades</th>
                   <th class="col-actions">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="(school, index) in filteredSchools" :key="index">
                   <td>{{ school.name }}</td>
+                  <td>{{ school.inepCode || '—' }}</td>
                   <td>{{ school.city }}</td>
+                  <td>{{ school.address || '—' }}</td>
                   <td>{{ school.type }}</td>
                   <td>
                     <span
@@ -59,6 +63,12 @@
                   </td>
                   <td>{{ school.phone }}</td>
                   <td>{{ school.email }}</td>
+                  <td>
+                    <span v-if="school.colleges?.length">
+                      {{ school.colleges.map((c) => c.name).join(', ') }}
+                    </span>
+                    <span v-else>—</span>
+                  </td>
                   <td class="action-buttons">
                     <button class="edit-button" @click="editSchool(index)">
                       Editar
@@ -80,7 +90,6 @@
           <h2>{{ isEditing ? 'Editar Escola' : 'Adicionar Escola' }}</h2>
 
           <form @submit.prevent="saveSchool">
-            <!-- Nome da Escola -->
             <div class="form-group">
               <label for="nome">Nome da Escola</label>
               <input
@@ -93,7 +102,29 @@
               />
             </div>
 
-            <!-- Município -->
+            <div
+              v-if="formMessage"
+              :class="{
+                'message-success': formSuccess,
+                'message-error': !formSuccess,
+              }"
+              class="form-message"
+            >
+              {{ formMessage }}
+            </div>
+
+            <div class="form-group">
+              <label for="inep">Código INEP</label>
+              <input
+                id="inep"
+                type="text"
+                v-model="currentSchool.inep"
+                class="form-control"
+                placeholder="Digite o código INEP..."
+                required
+              />
+            </div>
+
             <div class="form-group">
               <label for="city">Município</label>
               <select
@@ -113,7 +144,20 @@
               </select>
             </div>
 
-            <!-- Tipo -->
+            <div class="form-group">
+              <label for="address">Endereço</label>
+              <input
+                id="address"
+                type="text"
+                v-model="currentSchool.address"
+                class="form-control"
+                placeholder="Digite o endereço da escola..."
+              />
+            </div>
+
+            <!-- Campo fixo para estado (CE) -->
+            <input type="hidden" v-model="currentSchool.state" />
+
             <div class="form-group">
               <label for="type">Tipo</label>
               <select
@@ -127,7 +171,6 @@
               </select>
             </div>
 
-            <!-- Status -->
             <div class="form-group">
               <label for="status">Status</label>
               <select
@@ -141,47 +184,55 @@
               </select>
             </div>
 
-            <!-- Faculdade (dropdown) -->
             <div class="form-group">
-              <label for="college">Faculdade</label>
-              <select
-                id="college"
-                v-model="currentSchool.collegeId"
-                class="form-control"
-                required
-              >
-                <option disabled value="">Selecione a faculdade</option>
-                <option
-                  v-for="college in collegesList"
-                  :key="college.id"
-                  :value="college.id"
+              <label for="colleges">Faculdades Vinculadas</label>
+              <div style="display: flex; gap: 10px; align-items: center">
+                <select
+                  id="colleges"
+                  v-model="selectedCollegeId"
+                  class="form-control"
                 >
-                  {{ college.name }}
-                </option>
-              </select>
+                  <option disabled value="">Selecione uma faculdade</option>
+                  <option
+                    v-for="college in collegesList"
+                    :key="college.id"
+                    :value="college.id"
+                    :disabled="currentSchool.collegeIds.includes(college.id)"
+                  >
+                    {{ college.name }}
+                  </option>
+                </select>
+                <button
+                  type="button"
+                  class="add-button"
+                  style="height: 38px"
+                  @click="addCollege"
+                >
+                  Adicionar
+                </button>
+              </div>
+              <ul style="margin-top: 10px; padding-left: 20px">
+                <li
+                  v-for="id in currentSchool.collegeIds"
+                  :key="id"
+                  style="margin-bottom: 5px"
+                >
+                  {{ getCollegeName(id) }}
+                  <button
+                    type="button"
+                    style="margin-left: 10px; color: red"
+                    @click="removeCollege(id)"
+                  >
+                    Remover
+                  </button>
+                </li>
+              </ul>
+              <small class="text-muted"
+                >Você pode deixar em branco ou selecionar múltiplas
+                faculdades.</small
+              >
             </div>
 
-            <!-- Escola onde o aluno deve estagiar -->
-            <div class="form-group">
-              <label for="stageSchool">Escola para Estágio</label>
-              <select
-                id="stageSchool"
-                v-model="currentSchool.stageSchoolId"
-                class="form-control"
-                required
-              >
-                <option disabled value="">Selecione a escola de estágio</option>
-                <option
-                  v-for="school in schoolsList"
-                  :key="school.id"
-                  :value="school.id"
-                >
-                  {{ school.name }}
-                </option>
-              </select>
-            </div>
-
-            <!-- Telefone -->
             <div class="form-group">
               <label for="phone">Telefone</label>
               <input
@@ -193,7 +244,6 @@
               />
             </div>
 
-            <!-- E-mail -->
             <div class="form-group">
               <label for="email">E-mail</label>
               <input
@@ -205,7 +255,6 @@
               />
             </div>
 
-            <!-- Botões -->
             <div class="button-group">
               <button type="submit" class="save-button">Salvar</button>
               <button type="button" class="cancel-button" @click="closeModal">
@@ -216,6 +265,7 @@
         </div>
       </div>
     </div>
+
     <!-- Rodapé -->
     <Footer class="footer-fixed" />
   </div>
@@ -224,161 +274,194 @@
 <script>
 import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
+import { api } from '@/services/api';
 
 export default {
   name: 'SchoolsPage',
   components: { Header, Footer },
   data() {
     return {
-      // Filtro de busca
       searchQuery: '',
-      // Controle do modal
       isModalOpen: false,
       isEditing: false,
-      // Escola atual (formulário)
+      formMessage: '',
+      formSuccess: false,
+      selectedCollegeId: null,
       currentSchool: {
+        id: null,
         name: '',
         inepCode: '',
         city: '',
         type: 'Pública',
         status: 'Ativa',
-        director: '',
+        address: '',
         phone: '',
         email: '',
+        collegeIds: [],
       },
-      // Lista de escolas exibidas na tabela
-      schools: [
-        {
-          name: 'EEFM Paulo Sarasate',
-          inepCode: '23000001',
-          city: 'Fortaleza',
-          type: 'Pública',
-          status: 'Ativa',
-          director: 'Fulano de Tal',
-          phone: '(85) 99999-9999',
-          email: 'fulano@escola.gov.br',
-        },
-      ],
-      // Lista para autocomplete
-      publicSchoolsCE: [
-        {
-          inepCode: '23000001',
-          name: 'EEFM Paulo Sarasate',
-          city: 'Fortaleza',
-        },
-        {
-          inepCode: '23000002',
-          name: 'EEFM Governador Adauto Bezerra',
-          city: 'Crato',
-        },
-        {
-          inepCode: '23000003',
-          name: 'EEFM Liceu do Ceará',
-          city: 'Fortaleza',
-        },
-        { inepCode: '23000004', name: 'EEFM Domingos Sávio', city: 'Sobral' },
-      ],
-      showSuggestions: false,
-      // Municípios (exemplo)
+      schools: [],
+      collegesList: [],
       municipalities: [
         'Abaiara',
         'Acarapé',
         'Acaraú',
         'Acopiara',
         'Aiuaba',
-        // ...
+        'Fortaleza',
+        'Crato',
+        'Sobral',
         'Viçosa do Ceará',
       ],
     };
   },
   computed: {
-    // Filtra escolas pela busca
     filteredSchools() {
       return this.schools.filter((school) =>
-        school.name.toLowerCase().includes(this.searchQuery.toLowerCase())
-      );
-    },
-    // Filtra sugestões (autocomplete) pelo nome
-    filteredSuggestions() {
-      if (!this.currentSchool.name) return [];
-      const searchName = this.currentSchool.name.toLowerCase();
-      return this.publicSchoolsCE.filter((school) =>
-        school.name.toLowerCase().includes(searchName)
+        (school.name ?? '')
+          .toLowerCase()
+          .includes(this.searchQuery.toLowerCase())
       );
     },
   },
   methods: {
-    // Atualiza as sugestões
-    onNameInput() {
-      this.showSuggestions = !!this.currentSchool.name;
-    },
-    // Seleciona uma sugestão
-    selectSchool(school) {
-      this.currentSchool.name = school.name;
-      this.currentSchool.inepCode = school.inepCode;
-      this.currentSchool.city = school.city;
-      this.showSuggestions = false;
-    },
-    // Navegação (botão Home)
     goToDashboard() {
       this.$router.push('/dashboard');
     },
-    // Abre modal para adicionar
     openModal() {
       this.isModalOpen = true;
       this.isEditing = false;
+      this.selectedCollegeId = null;
       this.currentSchool = {
+        id: null,
         name: '',
         inepCode: '',
         city: '',
         type: 'Pública',
         status: 'Ativa',
-        director: '',
+        address: '',
         phone: '',
         email: '',
+        collegeIds: [],
       };
     },
-    // Fecha modal
     closeModal() {
       this.isModalOpen = false;
-      this.showSuggestions = false;
     },
-    // Edita escola
+    async fetchSchools() {
+      try {
+        const response = await api.get('/schools');
+        this.schools = response.data.map((school) => ({
+          ...school,
+          address: school.address ?? '',
+          phone: school.phone ?? '',
+          email: school.email ?? '',
+          type: school.type ?? '',
+          status: school.status ?? '',
+          colleges: school.colleges ?? [],
+        }));
+      } catch (error) {
+        console.error('Erro ao carregar escolas:', error);
+      }
+    },
+
+    async fetchFaculties() {
+      try {
+        const response = await api.get('/faculties');
+        this.collegesList = response.data;
+      } catch (error) {
+        console.error('Erro ao carregar faculdades:', error);
+      }
+    },
     editSchool(index) {
+      const selected = this.schools[index];
       this.isEditing = true;
-      this.currentSchool = { ...this.schools[index] };
+      this.currentSchool = {
+        id: selected.id,
+        name: selected.name,
+        inepCode: selected.inepCode,
+        city: selected.city,
+        type: selected.type,
+        status: selected.status,
+        address: selected.address,
+        phone: selected.phone,
+        email: selected.email,
+        collegeIds: selected.colleges?.map((c) => c.id) || [],
+      };
+      this.selectedCollegeId = null;
       this.isModalOpen = true;
     },
-    // Salva (adiciona/atualiza)
-    saveSchool() {
-      if (this.isEditing) {
-        const index = this.schools.findIndex(
-          (s) => s.inepCode === this.currentSchool.inepCode
-        );
-        if (index !== -1) {
-          this.schools[index] = { ...this.currentSchool };
+    async saveSchool() {
+      const payload = {
+        name: this.currentSchool.name,
+        inepCode: this.currentSchool.inepCode,
+        city: this.currentSchool.city,
+        type: this.currentSchool.type,
+        status: this.currentSchool.status,
+        address: this.currentSchool.address,
+        phone: this.currentSchool.phone,
+        email: this.currentSchool.email,
+        colleges: this.currentSchool.collegeIds.map((id) => ({ id })),
+      };
+
+      try {
+        if (this.isEditing && this.currentSchool.id) {
+          await api.put(`/schools/${this.currentSchool.id}`, payload);
+          this.formMessage = 'Escola atualizada com sucesso!';
         } else {
-          // Tenta achar pelo nome, caso o INEP não bata
-          const idxByName = this.schools.findIndex(
-            (s) => s.name === this.currentSchool.name
-          );
-          if (idxByName !== -1) {
-            this.schools[idxByName] = { ...this.currentSchool };
-          } else {
-            // Se não achar, adiciona
-            this.schools.push({ ...this.currentSchool });
-          }
+          await api.post('/schools', payload);
+          this.formMessage = 'Escola cadastrada com sucesso!';
         }
-      } else {
-        // Nova escola
-        this.schools.push({ ...this.currentSchool });
+
+        this.formSuccess = true;
+
+        setTimeout(() => {
+          this.formMessage = '';
+          this.closeModal();
+          this.fetchSchools();
+        }, 3000);
+      } catch (error) {
+        console.error('Erro ao salvar escola:', error);
+        this.formMessage = 'Erro ao salvar escola. Verifique os dados.';
+        this.formSuccess = false;
+
+        setTimeout(() => {
+          this.formMessage = '';
+        }, 5000);
       }
-      this.closeModal();
     },
-    // Exclui escola
-    deleteSchool(index) {
-      this.schools.splice(index, 1);
+    async deleteSchool(index) {
+      const id = this.schools[index].id;
+      if (confirm('Deseja excluir esta escola?')) {
+        try {
+          await api.delete(`/schools/${id}`);
+          await this.fetchSchools();
+        } catch (error) {
+          console.error('Erro ao excluir escola:', error);
+        }
+      }
     },
+    getCollegeName(id) {
+      const college = this.collegesList.find((c) => c.id === id);
+      return college ? college.name : 'Faculdade não encontrada';
+    },
+    addCollege() {
+      if (
+        this.selectedCollegeId &&
+        !this.currentSchool.collegeIds.includes(this.selectedCollegeId)
+      ) {
+        this.currentSchool.collegeIds.push(this.selectedCollegeId);
+        this.selectedCollegeId = null;
+      }
+    },
+    removeCollege(id) {
+      this.currentSchool.collegeIds = this.currentSchool.collegeIds.filter(
+        (cid) => cid !== id
+      );
+    },
+  },
+  mounted() {
+    this.fetchSchools();
+    this.fetchFaculties();
   },
 };
 </script>
@@ -389,6 +472,10 @@ export default {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+}
+.col-address {
+  padding: 8px;
+  text-align: left;
 }
 
 .content {
@@ -422,6 +509,26 @@ export default {
   justify-content: center;
   cursor: pointer;
   font-size: 16px; /* Tamanho do ícone */
+}
+.form-message {
+  margin-top: 10px;
+  padding: 8px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.message-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.message-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
 }
 
 /* Botão "Adicionar Escola" */
@@ -465,14 +572,14 @@ export default {
 .col-city {
   width: 12%;
 }
+.col-address {
+  width: 12%;
+} /* <- ADICIONADO AGORA */
 .col-type {
   width: 10%;
 }
 .col-status {
   width: 10%;
-}
-.col-director {
-  width: 12%;
 }
 .col-phone {
   width: 10%;
@@ -626,5 +733,25 @@ export default {
 /* Rodapé fixo, se necessário */
 .footer-fixed {
   margin-top: auto;
+}
+.form-message {
+  margin-top: 10px;
+  padding: 8px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.message-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.message-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
 }
 </style>
