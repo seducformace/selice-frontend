@@ -46,11 +46,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
         logger.info("Usuário encontrado: {}", user.getEmail());
 
-        // Retorna um objeto UserDetails configurado com a senha criptografada armazenada no banco
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
-                .password(user.getPassword())  // Senha criptografada
-                .roles(user.getRole())
+                .password(user.getPassword())
+                .roles(user.getRole()) // ✅ Corrigido: removido .name()
                 .build();
     }
 }

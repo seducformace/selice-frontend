@@ -23,7 +23,6 @@ import java.util.Optional;
 
 /**
  * Controlador responsável por autenticar usuários e gerar o token JWT.
- * Versão segura com validação de senha via AuthenticationManager.
  */
 @RestController
 @RequestMapping("/api/authentication")
@@ -49,14 +48,14 @@ public class AuthenticationController {
     }
 
     /**
-     * Endpoint POST para autenticação de usuários com validação de senha.
+     * Realiza a autenticação de um usuário e retorna um token JWT.
      */
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
-        logger.info("🔒 Tentativa de login com e-mail: {}", loginRequest.getEmail());
+    public ResponseEntity<LoginResponse> authenticateUser(@RequestBody LoginRequest loginRequest) {
+        logger.info("🔐 Tentativa de login: {}", loginRequest.getEmail());
 
         try {
-            // Autentica usando e-mail e senha com Spring Security
+            // Autentica o usuário com Spring Security
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getEmail(),
@@ -64,27 +63,30 @@ public class AuthenticationController {
                     )
             );
 
+            // Define o contexto de segurança
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // Carrega os detalhes do usuário
+            // Carrega o usuário completo
             UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getEmail());
 
-            // Busca a role real do banco
+            // Recupera a role real no banco
             Optional<User> userOptional = userRepository.findByEmailIgnoreCase(loginRequest.getEmail());
             if (userOptional.isEmpty()) {
-                logger.warn("❌ Usuário não encontrado no banco: {}", loginRequest.getEmail());
+                logger.warn("❌ Usuário não encontrado no banco.");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new LoginResponse("Usuário não encontrado no banco.", null));
+                        .body(new LoginResponse("Usuário não encontrado.", null));
             }
 
             String role = "ROLE_" + userOptional.get().getRole().toUpperCase();
+
+            // Geração do token JWT
             String token = jwtTokenProvider.generateToken(userDetails.getUsername(), role);
 
             logger.info("✅ Login realizado com sucesso para: {}", userDetails.getUsername());
             return ResponseEntity.ok(new LoginResponse("Login realizado com sucesso!", token));
 
         } catch (Exception e) {
-            logger.error("❌ Erro de autenticação para: {}", loginRequest.getEmail(), e);
+            logger.error("❌ Erro ao autenticar: {}", loginRequest.getEmail(), e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new LoginResponse("E-mail ou senha inválidos.", null));
         }

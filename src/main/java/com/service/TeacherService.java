@@ -47,6 +47,27 @@ public class TeacherService {
     }
 
     /**
+     * Atualiza um professor existente.
+     *
+     * @param id             ID do professor.
+     * @param updatedTeacher Novos dados.
+     * @return Professor atualizado.
+     */
+    public Optional<Teacher> updateTeacher(Long id, Teacher updatedTeacher) {
+        return teacherRepository.findById(id).map(existing -> {
+            existing.setName(updatedTeacher.getName());
+            existing.setEmail(updatedTeacher.getEmail());
+            existing.setQualification(updatedTeacher.getQualification());
+            existing.setSchool(updatedTeacher.getSchool()); // Agora é String
+            existing.setRegistration(updatedTeacher.getRegistration());
+            existing.setDiscipline(updatedTeacher.getDiscipline());
+            existing.setOrientedStudents(updatedTeacher.getOrientedStudents());
+            existing.setStudentsInProgress(updatedTeacher.getStudentsInProgress());
+            return teacherRepository.save(existing);
+        });
+    }
+
+    /**
      * Exclui um professor pelo ID.
      *
      * @param id ID do professor a ser excluído.

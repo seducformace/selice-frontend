@@ -52,7 +52,9 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/error",
                                 "/api/faculties",
-                                "/api/faculties/**"
+                                "/api/faculties/**",
+                                "/api/schools",           // 🔓 LIBERADO TEMPORARIAMENTE
+                                "/api/schools/**"         // 🔓 LIBERADO TEMPORARIAMENTE
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

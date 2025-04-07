@@ -18,34 +18,44 @@ public class School {
     @GeneratedValue(strategy = GenerationType.IDENTITY) // ID gerado automaticamente pelo banco.
     private Long id;
 
-    @NotBlank(message = "O nome da escola é obrigatório.") // Validação: não permite valores nulos ou vazios.
-    @Size(min = 2, max = 100, message = "O nome deve ter entre 2 e 100 caracteres.") // Restrições de tamanho.
-    @Column(name = "name", nullable = false, unique = true) // Nome único no banco de dados.
+    @NotBlank(message = "O nome da escola é obrigatório.")
+    @Size(min = 2, max = 100, message = "O nome deve ter entre 2 e 100 caracteres.")
+    @Column(name = "name", nullable = false, unique = true)
     private String name;
 
-    @NotBlank(message = "O endereço é obrigatório.") // Validação para evitar endereços vazios.
-    @Size(min = 5, max = 200, message = "O endereço deve ter entre 5 e 200 caracteres.") // Limitação de tamanho.
-    @Column(name = "address", nullable = false) // Campo obrigatório.
+    @NotBlank(message = "O endereço é obrigatório.")
+    @Size(min = 5, max = 200, message = "O endereço deve ter entre 5 e 200 caracteres.")
+    @Column(name = "address", nullable = false)
     private String address;
 
-    @NotBlank(message = "A cidade é obrigatória.") // Validação para evitar cidades vazias.
-    @Size(min = 2, max = 100, message = "A cidade deve ter entre 2 e 100 caracteres.") // Restrições de tamanho.
+    @NotBlank(message = "A cidade é obrigatória.")
+    @Size(min = 2, max = 100, message = "A cidade deve ter entre 2 e 100 caracteres.")
     @Column(name = "city", nullable = false)
     private String city;
 
-    @NotBlank(message = "O estado é obrigatório.") // Validação: não permite valores nulos ou vazios.
-    @Size(min = 2, max = 2, message = "O estado deve ter exatamente 2 caracteres.") // Restrições para estados brasileiros.
+    @NotBlank(message = "O estado é obrigatório.")
+    @Size(min = 2, max = 2, message = "O estado deve ter exatamente 2 caracteres.")
     @Column(name = "state", nullable = false)
     private String state;
 
-    @JsonIgnore // Ignora esta propriedade na serialização JSON para evitar referências circulares.
+    @Column(name = "type")
+    private String type;
+
+    @Column(name = "status")
+    private String status;
+
+    @Column(name = "phone")
+    private String phone;
+
+    @Column(name = "email")
+    private String email;
+
+    @JsonIgnore
     @OneToMany(mappedBy = "school", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Coordinator> coordinators;
 
-    // Construtor padrão necessário para o JPA.
     public School() {}
 
-    // Construtor completo para inicializar a entidade.
     public School(String name, String address, String city, String state) {
         this.name = name;
         this.address = address;
@@ -53,7 +63,6 @@ public class School {
         this.state = state;
     }
 
-    // Getters e Setters.
     public Long getId() {
         return id;
     }
@@ -94,6 +103,38 @@ public class School {
         this.state = state;
     }
 
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
     public List<Coordinator> getCoordinators() {
         return coordinators;
     }
@@ -110,6 +151,10 @@ public class School {
                 ", address='" + address + '\'' +
                 ", city='" + city + '\'' +
                 ", state='" + state + '\'' +
+                ", type='" + type + '\'' +
+                ", status='" + status + '\'' +
+                ", phone='" + phone + '\'' +
+                ", email='" + email + '\'' +
                 '}';
     }
 }
