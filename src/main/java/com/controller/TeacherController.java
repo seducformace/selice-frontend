@@ -8,58 +8,44 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Controlador para gerenciar as operações relacionadas aos professores.
- */
 @RestController
 @RequestMapping("/api/teachers")
-@CrossOrigin(origins = "*") // Permite chamadas do frontend local (ajuste se necessário)
+// Ajuste importante: não pode usar "*" com credenciais habilitadas
+@CrossOrigin(origins = "http://localhost:8081", allowCredentials = "true") // ajuste conforme necessário
 public class TeacherController {
 
     @Autowired
     private TeacherService teacherService;
 
     /**
-     * Cria um novo professor.
+     * Cria um novo professor. O payload deve conter os IDs das escolas no campo `schools`.
      */
     @PostMapping
     public ResponseEntity<Teacher> createTeacher(@RequestBody Teacher teacher) {
-        Teacher createdTeacher = teacherService.createTeacher(teacher);
-        return ResponseEntity.ok(createdTeacher);
+        Teacher created = teacherService.createTeacher(teacher);
+        return ResponseEntity.ok(created);
     }
 
     /**
-     * Retorna todos os professores cadastrados.
+     * Retorna a lista de todos os professores cadastrados.
      */
     @GetMapping
     public ResponseEntity<List<Teacher>> getAllTeachers() {
-        List<Teacher> teachers = teacherService.getAllTeachers();
-        return ResponseEntity.ok(teachers);
+        List<Teacher> list = teacherService.getAllTeachers();
+        return ResponseEntity.ok(list);
     }
 
     /**
-     * Retorna um professor específico pelo ID.
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<Teacher> getTeacherById(@PathVariable Long id) {
-        return teacherService.getTeacherById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    /**
-     * Atualiza um professor existente.
+     * Atualiza um professor pelo ID.
      */
     @PutMapping("/{id}")
     public ResponseEntity<Teacher> updateTeacher(@PathVariable Long id, @RequestBody Teacher teacher) {
-        return teacherService.updateTeacher(id, teacher)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-
+        Teacher updated = teacherService.updateTeacher(id, teacher);
+        return ResponseEntity.ok(updated);
     }
 
     /**
-     * Remove um professor pelo ID.
+     * Exclui um professor pelo ID.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTeacher(@PathVariable Long id) {

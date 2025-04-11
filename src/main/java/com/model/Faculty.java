@@ -1,6 +1,9 @@
 package com.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+
 import java.io.Serializable;
 import java.util.List;
 
@@ -12,44 +15,39 @@ import java.util.List;
 @Table(name = "faculties")
 public class Faculty implements Serializable {
 
-    // Identificador único (chave primária) com geração automática
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Nome da faculdade (único e obrigatório)
     @Column(nullable = false, unique = true)
     private String name;
 
-    // Código do MEC (obrigatório e único)
     @Column(nullable = false, unique = true)
     private String mecCode;
 
-    // CNPJ da instituição (obrigatório e único)
     @Column(nullable = false, unique = true)
     private String cnpj;
 
-    // Nome do reitor da instituição
     @Column(nullable = false)
     private String deanName;
 
-    // Nome do responsável pela parceria com a SEDUC
     @Column(nullable = false)
     private String partnershipResponsible;
 
-    // Telefone de contato
     @Column(nullable = false)
     private String contactPhone;
 
-    // Cidade da faculdade
+    @Email(message = "E-mail inválido") // ✅ Validação de formato
+    @NotBlank(message = "O campo e-mail é obrigatório")
+    @Column(nullable = false)
+    private String email; // ✅ Campo novo
+
     @Column(nullable = false)
     private String city;
 
-    // Estado (ex: "Ceará")
     @Column(nullable = false)
     private String state;
 
-    // Lista de cursos oferecidos pela faculdade
     @ElementCollection
     @CollectionTable(
             name = "faculty_courses",
@@ -58,9 +56,6 @@ public class Faculty implements Serializable {
     @Column(name = "course")
     private List<String> offeredCourses;
 
-    /**
-     * Construtor padrão exigido pelo JPA.
-     */
     public Faculty() {}
 
     // Getters e Setters
@@ -119,6 +114,14 @@ public class Faculty implements Serializable {
 
     public void setContactPhone(String contactPhone) {
         this.contactPhone = contactPhone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getCity() {

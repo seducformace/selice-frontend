@@ -1,21 +1,18 @@
 package com.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
-/**
- * Representa uma Escola no sistema SELICE, contendo informações como nome, endereço, cidade e estado.
- */
 @Entity
-@Table(name = "schools") // Define a tabela "schools" no banco de dados.
+@Table(name = "schools")
 public class School {
 
-    @Id // Define o identificador único.
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // ID gerado automaticamente pelo banco.
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NotBlank(message = "O nome da escola é obrigatório.")
@@ -50,9 +47,16 @@ public class School {
     @Column(name = "email")
     private String email;
 
-    @JsonIgnore
+    @Column(name = "inep_code")
+    private String inepCode;
+
     @OneToMany(mappedBy = "school", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnoreProperties("school")
     private List<Coordinator> coordinators;
+
+    @ManyToMany(mappedBy = "schools")
+    @JsonIgnoreProperties("schools") // evita loop no lado do professor
+    private List<Teacher> teachers;
 
     public School() {}
 
@@ -62,6 +66,8 @@ public class School {
         this.city = city;
         this.state = state;
     }
+
+    // Getters e Setters
 
     public Long getId() {
         return id;
@@ -135,12 +141,28 @@ public class School {
         this.email = email;
     }
 
+    public String getInepCode() {
+        return inepCode;
+    }
+
+    public void setInepCode(String inepCode) {
+        this.inepCode = inepCode;
+    }
+
     public List<Coordinator> getCoordinators() {
         return coordinators;
     }
 
     public void setCoordinators(List<Coordinator> coordinators) {
         this.coordinators = coordinators;
+    }
+
+    public List<Teacher> getTeachers() {
+        return teachers;
+    }
+
+    public void setTeachers(List<Teacher> teachers) {
+        this.teachers = teachers;
     }
 
     @Override
@@ -155,6 +177,7 @@ public class School {
                 ", status='" + status + '\'' +
                 ", phone='" + phone + '\'' +
                 ", email='" + email + '\'' +
+                ", inepCode='" + inepCode + '\'' +
                 '}';
     }
 }

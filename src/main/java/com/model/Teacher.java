@@ -1,6 +1,7 @@
 package com.model;
 
 import jakarta.persistence.*;
+import java.util.List;
 
 @Entity
 @Table(name = "teachers")
@@ -25,18 +26,24 @@ public class Teacher {
     @Column(nullable = false, length = 100)
     private String discipline;
 
-    @Column(nullable = false, length = 100)
-    private String school;
+    // Mapeamento ManyToMany entre professores e escolas
+    @ManyToMany
+    @JoinTable(
+            name = "teacher_schools",
+            joinColumns = @JoinColumn(name = "teacher_id"),
+            inverseJoinColumns = @JoinColumn(name = "school_id")
+    )
+    private List<School> schools;
 
+    @Column(name = "oriented_students", nullable = false)
     private int orientedStudents;
 
+    @Column(name = "students_in_progress", nullable = false)
     private int studentsInProgress;
 
-    // Construtor padrão
     public Teacher() {}
 
     // Getters e Setters
-
     public Long getId() {
         return id;
     }
@@ -85,12 +92,12 @@ public class Teacher {
         this.discipline = discipline;
     }
 
-    public String getSchool() {
-        return school;
+    public List<School> getSchools() {
+        return schools;
     }
 
-    public void setSchool(String school) {
-        this.school = school;
+    public void setSchools(List<School> schools) {
+        this.schools = schools;
     }
 
     public int getOrientedStudents() {

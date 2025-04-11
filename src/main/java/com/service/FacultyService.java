@@ -60,6 +60,7 @@ public class FacultyService {
         existing.setDeanName(updatedFaculty.getDeanName());
         existing.setPartnershipResponsible(updatedFaculty.getPartnershipResponsible());
         existing.setContactPhone(updatedFaculty.getContactPhone());
+        existing.setEmail(updatedFaculty.getEmail()); // ✅ Atualização do campo e-mail
         existing.setCity(updatedFaculty.getCity());
         existing.setState(updatedFaculty.getState());
         existing.setOfferedCourses(updatedFaculty.getOfferedCourses());
