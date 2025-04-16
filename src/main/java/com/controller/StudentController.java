@@ -13,6 +13,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/students")
 @Validated
+@CrossOrigin(origins = "http://localhost:8081", allowCredentials = "true") // Conexão com frontend garantida
 public class StudentController {
 
     @Autowired
@@ -33,11 +34,12 @@ public class StudentController {
     @GetMapping("/{id}")
     public ResponseEntity<Student> getStudentById(@PathVariable Long id) {
         Optional<Student> student = studentService.getStudentById(id);
-        return student.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+        return student.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     /**
-     * Retorna estudantes com horas pendentes inferiores ou iguais ao valor especificado.
+     * Retorna estudantes com horas pendentes menores ou iguais ao valor fornecido.
      */
     @GetMapping("/hours")
     public ResponseEntity<List<Student>> getStudentsByHours(@RequestParam int maxHours) {
@@ -72,6 +74,6 @@ public class StudentController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteStudent(@PathVariable Long id) {
         studentService.deleteStudent(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.noContent().build(); // 204 No Content
     }
 }

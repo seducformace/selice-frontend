@@ -9,6 +9,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "schools")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class School {
 
     @Id
@@ -50,12 +51,18 @@ public class School {
     @Column(name = "inep_code")
     private String inepCode;
 
+    // Novo campo: coordenador principal
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "main_coordinator_id")
+    @JsonIgnoreProperties({"school", "college", "hibernateLazyInitializer", "handler"})
+    private Coordinator coordinator;
+
     @OneToMany(mappedBy = "school", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties("school")
+    @JsonIgnoreProperties({"school", "college", "hibernateLazyInitializer", "handler"})
     private List<Coordinator> coordinators;
 
     @ManyToMany(mappedBy = "schools")
-    @JsonIgnoreProperties("schools") // evita loop no lado do professor
+    @JsonIgnoreProperties({"schools", "hibernateLazyInitializer", "handler"})
     private List<Teacher> teachers;
 
     public School() {}
@@ -68,102 +75,44 @@ public class School {
     }
 
     // Getters e Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public Long getId() {
-        return id;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
 
-    public String getName() {
-        return name;
-    }
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getState() { return state; }
+    public void setState(String state) { this.state = state; }
 
-    public String getAddress() {
-        return address;
-    }
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
 
-    public void setAddress(String address) {
-        this.address = address;
-    }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
-    public String getCity() {
-        return city;
-    }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
 
-    public void setCity(String city) {
-        this.city = city;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public String getState() {
-        return state;
-    }
+    public String getInepCode() { return inepCode; }
+    public void setInepCode(String inepCode) { this.inepCode = inepCode; }
 
-    public void setState(String state) {
-        this.state = state;
-    }
+    public Coordinator getCoordinator() { return coordinator; }
+    public void setCoordinator(Coordinator coordinator) { this.coordinator = coordinator; }
 
-    public String getType() {
-        return type;
-    }
+    public List<Coordinator> getCoordinators() { return coordinators; }
+    public void setCoordinators(List<Coordinator> coordinators) { this.coordinators = coordinators; }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getInepCode() {
-        return inepCode;
-    }
-
-    public void setInepCode(String inepCode) {
-        this.inepCode = inepCode;
-    }
-
-    public List<Coordinator> getCoordinators() {
-        return coordinators;
-    }
-
-    public void setCoordinators(List<Coordinator> coordinators) {
-        this.coordinators = coordinators;
-    }
-
-    public List<Teacher> getTeachers() {
-        return teachers;
-    }
-
-    public void setTeachers(List<Teacher> teachers) {
-        this.teachers = teachers;
-    }
+    public List<Teacher> getTeachers() { return teachers; }
+    public void setTeachers(List<Teacher> teachers) { this.teachers = teachers; }
 
     @Override
     public String toString() {

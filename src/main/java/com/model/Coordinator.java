@@ -1,9 +1,10 @@
 package com.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "coordinators")
@@ -13,108 +14,77 @@ public class Coordinator {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name", nullable = false)
     @NotBlank(message = "Nome é obrigatório.")
+    @Column(nullable = false)
     private String name;
 
-    @Column(name = "email", nullable = false, unique = true)
     @Email(message = "E-mail inválido.")
     @NotBlank(message = "E-mail é obrigatório.")
+    @Column(nullable = false, unique = true)
     private String email;
+
+    @NotBlank(message = "CPF é obrigatório.")
+    @Size(min = 11, max = 14, message = "O CPF deve ter entre 11 e 14 caracteres.")
+    @Column(nullable = false, unique = true, length = 14)
+    private String cpf;
 
     @Column(name = "phone_number", length = 15)
     private String phoneNumber;
 
-    @Column(name = "department", length = 100)
+    @Column(length = 100)
     private String department;
 
-    @Column(name = "status")
+    @Column
     private String status = "ATIVO";
 
-    @ManyToOne
-    @JoinColumn(name = "school_id")
-    @JsonBackReference(value = "school-coordinator")
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "school_id", foreignKey = @ForeignKey(name = "fk_coordinator_school"), nullable = true)
+    @JsonIgnoreProperties({"coordinators", "teachers", "hibernateLazyInitializer", "handler"})
     private School school;
 
-    @ManyToOne
-    @JoinColumn(name = "college_id") // Compatível com o banco
-    @JsonBackReference(value = "college-coordinator")
-    private College college;
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "faculty_id", foreignKey = @ForeignKey(name = "fk_coordinator_faculty"), nullable = true)
+    @JsonIgnoreProperties({"coordinators", "students", "hibernateLazyInitializer", "handler"})
+    private Faculty faculty;
 
     public Coordinator() {}
 
-    public Coordinator(String name, String email, String phoneNumber, String department, School school, College college) {
+    public Coordinator(String name, String email, String cpf, String phoneNumber, String department, School school, Faculty faculty) {
         this.name = name;
         this.email = email;
+        this.cpf = cpf;
         this.phoneNumber = phoneNumber;
         this.department = department;
         this.school = school;
-        this.college = college;
+        this.faculty = faculty;
     }
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getName() {
-        return name;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getCpf() { return cpf; }
+    public void setCpf(String cpf) { this.cpf = cpf; }
 
-    public String getEmail() {
-        return email;
-    }
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    public String getDepartment() { return department; }
+    public void setDepartment(String department) { this.department = department; }
 
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
+    public School getSchool() { return school; }
+    public void setSchool(School school) { this.school = school; }
 
-    public String getDepartment() {
-        return department;
-    }
-
-    public void setDepartment(String department) {
-        this.department = department;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public School getSchool() {
-        return school;
-    }
-
-    public void setSchool(School school) {
-        this.school = school;
-    }
-
-    public College getCollege() {
-        return college;
-    }
-
-    public void setCollege(College college) {
-        this.college = college;
-    }
+    public Faculty getFaculty() { return faculty; }
+    public void setFaculty(Faculty faculty) { this.faculty = faculty; }
 
     @Override
     public String toString() {
@@ -122,11 +92,12 @@ public class Coordinator {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", email='" + email + '\'' +
+                ", cpf='" + cpf + '\'' +
                 ", phoneNumber='" + phoneNumber + '\'' +
                 ", department='" + department + '\'' +
                 ", status='" + status + '\'' +
                 ", school=" + (school != null ? school.getName() : "Nenhuma") +
-                ", college=" + (college != null ? college.getName() : "Nenhuma") +
+                ", faculty=" + (faculty != null ? faculty.getName() : "Nenhuma") +
                 '}';
     }
 }

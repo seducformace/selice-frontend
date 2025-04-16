@@ -5,43 +5,83 @@ import java.util.HashMap;
 
 /**
  * Data Transfer Object (DTO) responsável por transportar dados
- * estatísticos relacionados às faculdades no sistema SELICE.
+ * estatísticos relacionados às entidades do sistema SELICE.
  *
- * Os dados incluem contagens por status (ativo/inativo)
- * e por tipo de instituição (pública/privada).
+ * Inclui contagens totais, agrupamentos específicos por tipo e status.
  */
 public class ReportsDTO {
 
-    // Quantidade de faculdades com status "Ativo"
-    private long activeCount;
+    // Quantidades totais por entidade
+    private long totalFaculties;
+    private long totalCoordinators;
+    private long totalTeachers;
+    private long totalStudents;
+    private long totalSchools;
 
-    // Quantidade de faculdades com status "Inativo"
-    private long inactiveCount;
-
-    // Mapa com os tipos de faculdade e respectivas quantidades (ex: {"Pública": 4, "Privada": 2})
+    // Contagens específicas para faculdades
+    private long activeFacultiesCount;
+    private long inactiveFacultiesCount;
     private Map<String, Long> byType = new HashMap<>();
+    private Map<String, Long> byStatus = new HashMap<>();
 
-    /**
-     * Construtor padrão.
-     */
     public ReportsDTO() {}
 
     // Getters e Setters
 
-    public long getActiveCount() {
-        return activeCount;
+    public long getTotalFaculties() {
+        return totalFaculties;
     }
 
-    public void setActiveCount(long activeCount) {
-        this.activeCount = activeCount;
+    public void setTotalFaculties(long totalFaculties) {
+        this.totalFaculties = totalFaculties;
     }
 
-    public long getInactiveCount() {
-        return inactiveCount;
+    public long getTotalCoordinators() {
+        return totalCoordinators;
     }
 
-    public void setInactiveCount(long inactiveCount) {
-        this.inactiveCount = inactiveCount;
+    public void setTotalCoordinators(long totalCoordinators) {
+        this.totalCoordinators = totalCoordinators;
+    }
+
+    public long getTotalTeachers() {
+        return totalTeachers;
+    }
+
+    public void setTotalTeachers(long totalTeachers) {
+        this.totalTeachers = totalTeachers;
+    }
+
+    public long getTotalStudents() {
+        return totalStudents;
+    }
+
+    public void setTotalStudents(long totalStudents) {
+        this.totalStudents = totalStudents;
+    }
+
+    public long getTotalSchools() {
+        return totalSchools;
+    }
+
+    public void setTotalSchools(long totalSchools) {
+        this.totalSchools = totalSchools;
+    }
+
+    public long getActiveFacultiesCount() {
+        return activeFacultiesCount;
+    }
+
+    public void setActiveFacultiesCount(long activeFacultiesCount) {
+        this.activeFacultiesCount = activeFacultiesCount;
+    }
+
+    public long getInactiveFacultiesCount() {
+        return inactiveFacultiesCount;
+    }
+
+    public void setInactiveFacultiesCount(long inactiveFacultiesCount) {
+        this.inactiveFacultiesCount = inactiveFacultiesCount;
     }
 
     public Map<String, Long> getByType() {
@@ -50,5 +90,13 @@ public class ReportsDTO {
 
     public void setByType(Map<String, Long> byType) {
         this.byType = byType;
+    }
+
+    public Map<String, Long> getByStatus() {
+        return byStatus;
+    }
+
+    public void setByStatus(Map<String, Long> byStatus) {
+        this.byStatus = byStatus;
     }
 }

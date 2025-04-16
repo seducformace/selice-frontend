@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Serviço responsável pela lógica de negócios dos professores.
+ */
 @Service
 public class TeacherService {
 
@@ -21,28 +24,26 @@ public class TeacherService {
     private SchoolRepository schoolRepository;
 
     /**
-     * Cria um novo professor, garantindo que todas as escolas estejam corretamente associadas.
+     * Cria um novo professor, garantindo que esteja vinculado a pelo menos uma escola válida.
      */
     public Teacher createTeacher(Teacher teacher) {
-        // Regra de negócio: pelo menos uma escola vinculada
         if (teacher.getSchools() == null || teacher.getSchools().isEmpty()) {
             throw new IllegalArgumentException("O professor deve estar vinculado a pelo menos uma escola.");
         }
 
-        // Confirma se cada escola existe no banco
-        List<School> schools = new ArrayList<>();
-        for (School s : teacher.getSchools()) {
-            School persistedSchool = schoolRepository.findById(s.getId())
-                    .orElseThrow(() -> new EntityNotFoundException("Escola com ID " + s.getId() + " não encontrada."));
-            schools.add(persistedSchool);
+        List<School> validSchools = new ArrayList<>();
+        for (School school : teacher.getSchools()) {
+            School persisted = schoolRepository.findById(school.getId())
+                    .orElseThrow(() -> new EntityNotFoundException("Escola com ID " + school.getId() + " não encontrada."));
+            validSchools.add(persisted);
         }
 
-        teacher.setSchools(schools);
+        teacher.setSchools(validSchools);
         return teacherRepository.save(teacher);
     }
 
     /**
-     * Atualiza os dados de um professor.
+     * Atualiza os dados de um professor existente.
      */
     public Teacher updateTeacher(Long id, Teacher updatedTeacher) {
         Teacher existing = teacherRepository.findById(id)
@@ -50,21 +51,21 @@ public class TeacherService {
 
         existing.setName(updatedTeacher.getName());
         existing.setEmail(updatedTeacher.getEmail());
+        existing.setCpf(updatedTeacher.getCpf());
         existing.setRegistration(updatedTeacher.getRegistration());
         existing.setQualification(updatedTeacher.getQualification());
         existing.setDiscipline(updatedTeacher.getDiscipline());
         existing.setOrientedStudents(updatedTeacher.getOrientedStudents());
         existing.setStudentsInProgress(updatedTeacher.getStudentsInProgress());
 
-        // Atualiza lista de escolas vinculadas
-        List<School> schools = new ArrayList<>();
-        for (School s : updatedTeacher.getSchools()) {
-            School persistedSchool = schoolRepository.findById(s.getId())
-                    .orElseThrow(() -> new EntityNotFoundException("Escola com ID " + s.getId() + " não encontrada."));
-            schools.add(persistedSchool);
+        List<School> updatedSchools = new ArrayList<>();
+        for (School school : updatedTeacher.getSchools()) {
+            School persisted = schoolRepository.findById(school.getId())
+                    .orElseThrow(() -> new EntityNotFoundException("Escola com ID " + school.getId() + " não encontrada."));
+            updatedSchools.add(persisted);
         }
 
-        existing.setSchools(schools);
+        existing.setSchools(updatedSchools);
         return teacherRepository.save(existing);
     }
 

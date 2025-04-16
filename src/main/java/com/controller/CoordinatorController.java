@@ -3,6 +3,7 @@ package com.controller;
 import com.model.Coordinator;
 import com.service.CoordinatorService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,37 +19,60 @@ public class CoordinatorController {
     @Autowired
     private CoordinatorService coordinatorService;
 
+    /**
+     * Cria um novo coordenador.
+     */
     @PostMapping
-    public ResponseEntity<Coordinator> createCoordinator(@RequestBody Coordinator coordinator) {
-        Coordinator newCoordinator = coordinatorService.createCoordinator(coordinator);
-        return ResponseEntity.ok(newCoordinator);
+    public ResponseEntity<Object> createCoordinator(@RequestBody Coordinator coordinator) {
+        try {
+            Coordinator newCoordinator = coordinatorService.createCoordinator(coordinator);
+            return ResponseEntity.ok(newCoordinator);
+        } catch (IllegalArgumentException | DataIntegrityViolationException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
+    /**
+     * Lista todos os coordenadores cadastrados.
+     */
     @GetMapping
     public ResponseEntity<List<Coordinator>> getAllCoordinators() {
         return ResponseEntity.ok(coordinatorService.getAllCoordinators());
     }
 
+    /**
+     * Retorna um coordenador pelo ID.
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<Coordinator> getCoordinatorById(@PathVariable Long id) {
+    public ResponseEntity<Object> getCoordinatorById(@PathVariable Long id) {
         return coordinatorService.getCoordinatorById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .<ResponseEntity<Object>>map(ResponseEntity::ok)
+                .orElse(ResponseEntity.status(404).body("Coordenador não encontrado com ID: " + id));
     }
 
+    /**
+     * Atualiza um coordenador existente.
+     */
     @PutMapping("/{id}")
-    public ResponseEntity<Coordinator> updateCoordinator(@PathVariable Long id, @RequestBody Coordinator coordinator) {
+    public ResponseEntity<Object> updateCoordinator(@PathVariable Long id, @RequestBody Coordinator coordinator) {
         try {
             Coordinator updatedCoordinator = coordinatorService.updateCoordinator(id, coordinator);
             return ResponseEntity.ok(updatedCoordinator);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(null);
+        } catch (IllegalArgumentException | DataIntegrityViolationException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
+    /**
+     * Exclui um coordenador pelo ID.
+     */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCoordinator(@PathVariable Long id) {
-        coordinatorService.deleteCoordinator(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Object> deleteCoordinator(@PathVariable Long id) {
+        try {
+            coordinatorService.deleteCoordinator(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

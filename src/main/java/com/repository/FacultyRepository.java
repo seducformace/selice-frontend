@@ -1,32 +1,32 @@
 package com.repository;
 
 import com.model.Faculty;
+import com.dto.LocationData;
+import com.dto.DetailedReportDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-/**
- * Repositório responsável pela persistência e consulta
- * da entidade Faculty no banco de dados.
- *
- * Estende JpaRepository, o que fornece acesso automático
- * a diversos métodos CRUD e de paginação.
- */
+import java.util.List;
+
 @Repository
 public interface FacultyRepository extends JpaRepository<Faculty, Long> {
 
-    /**
-     * Aqui podemos declarar métodos personalizados,
-     * usando a convenção de nomes do Spring Data JPA.
-     *
-     * Exemplos (não implementados ainda):
-     */
+    // ✅ Contagem por tipo (PÚBLICA ou PRIVADA)
+    long countByType(String type);
 
-    // Buscar uma faculdade pelo código MEC
-    // Optional<Faculty> findByMecCode(String mecCode);
+    // ✅ Contagem por estado (ATIVO ou INATIVO)
+    long countByState(String state); // <- uso correto do nome do campo "state"
 
-    // Buscar todas as faculdades de uma cidade específica
-    // List<Faculty> findByCity(String city);
+    // ✅ Contagem de coordenadores por tipo de faculdade
+    @Query("SELECT f.type, COUNT(c) FROM Coordinator c JOIN c.faculty f WHERE f IS NOT NULL GROUP BY f.type")
+    List<Object[]> getCoordinatorCountsByType();
 
-    // Contar quantas faculdades existem em um estado
-    // long countByState(String state);
+    // ✅ Estatísticas gerais por faculdade (exemplo simples, pode ser estendido)
+    @Query("SELECT new com.dto.DetailedReportDTO(f.id, f.name) FROM Faculty f")
+    List<DetailedReportDTO> getGeneralFacultyStatistics();
+
+    // ✅ Localizações para mapa interativo
+    @Query("SELECT new com.dto.LocationData(f.name, 'Faculdade', f.address, f.latitude, f.longitude) FROM Faculty f")
+    List<LocationData> getAllLocationsForMap();
 }

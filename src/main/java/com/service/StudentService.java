@@ -19,48 +19,36 @@ public class StudentService {
     private StudentRepository studentRepository;
 
     /**
-     * Busca todos os estudantes.
-     *
-     * @return Lista de estudantes
+     * Retorna todos os estudantes cadastrados.
      */
     public List<Student> getAllStudents() {
         return studentRepository.findAll();
     }
 
     /**
-     * Busca um estudante pelo ID.
-     *
-     * @param id ID do estudante
-     * @return Optional contendo o estudante ou vazio se não encontrado
+     * Retorna um estudante pelo ID.
      */
     public Optional<Student> getStudentById(Long id) {
         return studentRepository.findById(id);
     }
 
     /**
-     * Busca estudantes com horas pendentes <= maxHours.
-     *
-     * @param maxHours Valor máximo de horas pendentes
-     * @return Lista de estudantes
+     * Retorna estudantes com horas pendentes abaixo ou igual ao valor informado.
      */
     public List<Student> getStudentsByHours(int maxHours) {
         return studentRepository.findByHoursPendingLessThanEqual(maxHours);
     }
 
     /**
-     * Cria um novo estudante com todos os campos obrigatórios preenchidos.
-     *
-     * @param student Estudante a ser criado
-     * @return Estudante criado
+     * Cria um novo estudante, preenchendo automaticamente datas e valores padrão.
      */
     public Student createStudent(Student student) {
+        LocalDateTime now = LocalDateTime.now();
+        student.setCreatedAt(now);
+        student.setUpdatedAt(now);
+        student.setRegistrationDate(now);
 
-        // Definição de datas obrigatórias
-        student.setCreatedAt(LocalDateTime.now());
-        student.setUpdatedAt(LocalDateTime.now());
-        student.setRegistrationDate(LocalDateTime.now());
-
-        // Garante que campos inteiros obrigatórios nunca sejam nulos
+        // Garante que campos inteiros obrigatórios não fiquem nulos
         if (student.getHoursCompleted() == 0) student.setHoursCompleted(0);
         if (student.getHoursPending() == 0) student.setHoursPending(0);
         if (student.getHoursRemaining() == 0) student.setHoursRemaining(0);
@@ -70,34 +58,32 @@ public class StudentService {
 
     /**
      * Atualiza um estudante existente.
-     *
-     * @param id      ID do estudante a ser atualizado
-     * @param student Dados atualizados do estudante
-     * @return Estudante atualizado
      */
     public Student updateStudent(Long id, Student student) {
-        return studentRepository.findById(id).map(existingStudent -> {
-            existingStudent.setName(student.getName());
-            existingStudent.setEmail(student.getEmail());
-            existingStudent.setCpf(student.getCpf());
-            existingStudent.setCourse(student.getCourse());
-            existingStudent.setCollege(student.getCollege());
-            existingStudent.setTeacher(student.getTeacher());
-            existingStudent.setSchool(student.getSchool());
-            existingStudent.setHoursPending(student.getHoursPending());
-            existingStudent.setHoursCompleted(student.getHoursCompleted());
-            existingStudent.setHoursRemaining(student.getHoursRemaining());
-            existingStudent.setUpdatedAt(LocalDateTime.now());
-            return studentRepository.save(existingStudent);
+        return studentRepository.findById(id).map(existing -> {
+            existing.setName(student.getName());
+            existing.setEmail(student.getEmail());
+            existing.setCpf(student.getCpf());
+            existing.setCourse(student.getCourse());
+            existing.setFaculty(student.getFaculty()); // Atualizado para Faculty
+            existing.setTeacher(student.getTeacher());
+            existing.setSchool(student.getSchool());
+            existing.setHoursPending(student.getHoursPending());
+            existing.setHoursCompleted(student.getHoursCompleted());
+            existing.setHoursRemaining(student.getHoursRemaining());
+            existing.setUpdatedAt(LocalDateTime.now());
+
+            return studentRepository.save(existing);
         }).orElseThrow(() -> new RuntimeException("Estudante não encontrado com ID: " + id));
     }
 
     /**
      * Exclui um estudante pelo ID.
-     *
-     * @param id ID do estudante a ser excluído
      */
     public void deleteStudent(Long id) {
+        if (!studentRepository.existsById(id)) {
+            throw new RuntimeException("Estudante com ID " + id + " não encontrado.");
+        }
         studentRepository.deleteById(id);
     }
 }

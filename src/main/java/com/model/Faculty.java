@@ -1,62 +1,77 @@
 package com.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 
-import java.io.Serializable;
 import java.util.List;
 
-/**
- * Entidade que representa uma Faculdade no sistema SELICE.
- * Mapeada para a tabela "faculties" no banco de dados.
- */
 @Entity
 @Table(name = "faculties")
-public class Faculty implements Serializable {
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+public class Faculty {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "name", nullable = false, unique = true, length = 100)
     private String name;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "address", nullable = false, length = 200)
+    private String address;
+
+    @Column(name = "type", nullable = false, length = 20)
+    private String type = "PÚBLICA";
+
+    @Column(name = "status", nullable = false, length = 20)
+    private String status = "ATIVO";
+
+    @Column(name = "mec_code", length = 20)
     private String mecCode;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "cnpj", length = 20)
     private String cnpj;
 
-    @Column(nullable = false)
+    @Column(name = "dean_name", length = 100)
     private String deanName;
 
-    @Column(nullable = false)
+    @Column(name = "partnership_responsible", length = 100)
     private String partnershipResponsible;
 
-    @Column(nullable = false)
+    @Column(name = "contact_phone", length = 20)
     private String contactPhone;
 
-    @Email(message = "E-mail inválido") // ✅ Validação de formato
-    @NotBlank(message = "O campo e-mail é obrigatório")
-    @Column(nullable = false)
-    private String email; // ✅ Campo novo
+    @Column(name = "email", length = 100)
+    private String email;
 
-    @Column(nullable = false)
+    @Column(name = "city", length = 100)
     private String city;
 
-    @Column(nullable = false)
+    @Column(name = "state", length = 2)
     private String state;
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     @ElementCollection
-    @CollectionTable(
-            name = "faculty_courses",
-            joinColumns = @JoinColumn(name = "faculty_id")
-    )
+    @CollectionTable(name = "faculty_courses", joinColumns = @JoinColumn(name = "faculty_id"))
     @Column(name = "course")
     private List<String> offeredCourses;
 
+    @JsonIgnoreProperties("faculty")
+    @OneToMany(mappedBy = "faculty", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Coordinator> coordinators;
+
     public Faculty() {}
+
+    public Faculty(String name, String address, String type) {
+        this.name = name;
+        this.address = address;
+        this.type = type;
+    }
 
     // Getters e Setters
 
@@ -73,7 +88,43 @@ public class Faculty implements Serializable {
     }
 
     public void setName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("O nome da faculdade não pode ser vazio.");
+        }
         this.name = name;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        if (address == null || address.trim().isEmpty()) {
+            throw new IllegalArgumentException("O endereço da faculdade não pode ser vazio.");
+        }
+        this.address = address;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        if (type == null || (!type.equalsIgnoreCase("PÚBLICA") && !type.equalsIgnoreCase("PRIVADA"))) {
+            throw new IllegalArgumentException("O tipo deve ser 'PÚBLICA' ou 'PRIVADA'.");
+        }
+        this.type = type.toUpperCase();
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        if (status == null || (!status.equalsIgnoreCase("ATIVO") && !status.equalsIgnoreCase("INATIVO"))) {
+            throw new IllegalArgumentException("O status deve ser 'ATIVO' ou 'INATIVO'.");
+        }
+        this.status = status.toUpperCase();
     }
 
     public String getMecCode() {
@@ -140,11 +191,72 @@ public class Faculty implements Serializable {
         this.state = state;
     }
 
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
+
     public List<String> getOfferedCourses() {
         return offeredCourses;
     }
 
     public void setOfferedCourses(List<String> offeredCourses) {
         this.offeredCourses = offeredCourses;
+    }
+
+    public List<Coordinator> getCoordinators() {
+        return coordinators;
+    }
+
+    public void setCoordinators(List<Coordinator> coordinators) {
+        this.coordinators = coordinators;
+    }
+
+    public void addCoordinator(Coordinator coordinator) {
+        if (coordinator != null) {
+            coordinator.setFaculty(this);
+            this.coordinators.add(coordinator);
+        }
+    }
+
+    public void removeCoordinator(Coordinator coordinator) {
+        if (coordinator != null) {
+            coordinator.setFaculty(null);
+            this.coordinators.remove(coordinator);
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "Faculty{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", address='" + address + '\'' +
+                ", type='" + type + '\'' +
+                ", status='" + status + '\'' +
+                ", mecCode='" + mecCode + '\'' +
+                ", cnpj='" + cnpj + '\'' +
+                ", deanName='" + deanName + '\'' +
+                ", partnershipResponsible='" + partnershipResponsible + '\'' +
+                ", contactPhone='" + contactPhone + '\'' +
+                ", email='" + email + '\'' +
+                ", city='" + city + '\'' +
+                ", state='" + state + '\'' +
+                ", latitude=" + latitude +
+                ", longitude=" + longitude +
+                ", offeredCourses=" + offeredCourses +
+                ", coordinators=" + (coordinators != null ? coordinators.size() : 0) +
+                '}';
     }
 }

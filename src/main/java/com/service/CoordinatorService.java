@@ -1,97 +1,107 @@
 package com.service;
 
+import com.model.Faculty;
 import com.model.Coordinator;
+import com.model.School;
+import com.repository.FacultyRepository;
 import com.repository.CoordinatorRepository;
+import com.repository.SchoolRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.logging.Logger;
 
 /**
- * Serviço responsável por encapsular a lógica de negócio para Coordenadores.
- * Realiza operações como criação, consulta, atualização e remoção.
+ * Serviço responsável pelas regras de negócio relacionadas aos Coordenadores.
  */
 @Service
 public class CoordinatorService {
 
-    private static final Logger LOGGER = Logger.getLogger(CoordinatorService.class.getName());
-
     @Autowired
     private CoordinatorRepository coordinatorRepository;
 
+    @Autowired
+    private FacultyRepository facultyRepository;
+
+    @Autowired
+    private SchoolRepository schoolRepository;
+
     /**
-     * Cadastra um novo coordenador.
-     * Realiza validações obrigatórias antes de persistir os dados.
+     * Cria um novo coordenador, validando vínculo com instituição.
      */
     public Coordinator createCoordinator(Coordinator coordinator) {
-        // Verifica se o coordenador está vinculado a uma instituição
-        if (coordinator.getSchool() == null && coordinator.getCollege() == null) {
-            throw new IllegalArgumentException("O coordenador deve estar vinculado a uma escola ou faculdade.");
-        }
-
-        // Garante que não haja duplicidade de e-mail
-        if (coordinatorRepository.findByEmail(coordinator.getEmail()).isPresent()) {
-            throw new DataIntegrityViolationException("Já existe um coordenador com o e-mail " + coordinator.getEmail());
-        }
-
-        LOGGER.info("Criando novo coordenador: " + coordinator.getName());
+        validarDados(coordinator);
         return coordinatorRepository.save(coordinator);
+    }
+
+    /**
+     * Atualiza um coordenador existente.
+     */
+    public Coordinator updateCoordinator(Long id, Coordinator updated) {
+        Coordinator existing = coordinatorRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Coordenador não encontrado com ID: " + id));
+
+        existing.setName(updated.getName());
+        existing.setEmail(updated.getEmail());
+        existing.setCpf(updated.getCpf());
+        existing.setPhoneNumber(updated.getPhoneNumber());
+        existing.setDepartment(updated.getDepartment());
+        existing.setStatus(updated.getStatus());
+        existing.setFaculty(updated.getFaculty());
+        existing.setSchool(updated.getSchool());
+
+        validarDados(existing);
+        return coordinatorRepository.save(existing);
     }
 
     /**
      * Retorna todos os coordenadores cadastrados.
      */
     public List<Coordinator> getAllCoordinators() {
-        LOGGER.info("Buscando todos os coordenadores");
         return coordinatorRepository.findAll();
     }
 
     /**
-     * Busca um coordenador específico pelo ID.
+     * Retorna um coordenador específico pelo ID.
      */
     public Optional<Coordinator> getCoordinatorById(Long id) {
-        LOGGER.info("Buscando coordenador com ID: " + id);
         return coordinatorRepository.findById(id);
     }
 
     /**
-     * Busca um coordenador pelo e-mail.
-     */
-    public Optional<Coordinator> getCoordinatorByEmail(String email) {
-        LOGGER.info("Buscando coordenador com e-mail: " + email);
-        return coordinatorRepository.findByEmail(email);
-    }
-
-    /**
-     * Remove um coordenador pelo ID.
+     * Exclui um coordenador pelo ID.
      */
     public void deleteCoordinator(Long id) {
         if (!coordinatorRepository.existsById(id)) {
-            throw new IllegalArgumentException("Coordenador não encontrado com o ID " + id);
+            throw new IllegalArgumentException("Coordenador não encontrado com ID: " + id);
         }
-
-        LOGGER.info("Excluindo coordenador com ID: " + id);
         coordinatorRepository.deleteById(id);
     }
 
     /**
-     * Atualiza os dados de um coordenador existente.
+     * Verifica se os vínculos com instituições são válidos.
      */
-    public Coordinator updateCoordinator(Long id, Coordinator updatedCoordinator) {
-        Coordinator existingCoordinator = coordinatorRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Coordenador não encontrado com o ID " + id));
+    private void validarDados(Coordinator coordinator) {
+        if (coordinator.getFaculty() != null && coordinator.getSchool() != null) {
+            throw new IllegalArgumentException("O coordenador não pode estar vinculado a uma faculdade e uma escola ao mesmo tempo.");
+        }
 
-        existingCoordinator.setName(updatedCoordinator.getName());
-        existingCoordinator.setEmail(updatedCoordinator.getEmail());
-        existingCoordinator.setPhoneNumber(updatedCoordinator.getPhoneNumber());
-        existingCoordinator.setDepartment(updatedCoordinator.getDepartment());
-        existingCoordinator.setSchool(updatedCoordinator.getSchool());
-        existingCoordinator.setCollege(updatedCoordinator.getCollege());
+        if (coordinator.getFaculty() == null && coordinator.getSchool() == null) {
+            throw new IllegalArgumentException("O coordenador deve estar vinculado a uma faculdade ou escola.");
+        }
 
-        LOGGER.info("Atualizando coordenador com ID: " + id);
-        return coordinatorRepository.save(existingCoordinator);
+        if (coordinator.getFaculty() != null) {
+            Long facultyId = coordinator.getFaculty().getId();
+            facultyRepository.findById(facultyId).orElseThrow(() ->
+                    new DataIntegrityViolationException("Faculdade com ID " + facultyId + " não existe."));
+        }
+
+        if (coordinator.getSchool() != null) {
+            Long schoolId = coordinator.getSchool().getId();
+            schoolRepository.findById(schoolId).orElseThrow(() ->
+                    new DataIntegrityViolationException("Escola com ID " + schoolId + " não existe."));
+        }
     }
 }

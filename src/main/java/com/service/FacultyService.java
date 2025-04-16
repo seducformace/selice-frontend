@@ -55,17 +55,20 @@ public class FacultyService {
                 .orElseThrow(() -> new RuntimeException("Faculdade não encontrada com ID: " + id));
 
         existing.setName(updatedFaculty.getName());
+        existing.setAddress(updatedFaculty.getAddress());
+        existing.setType(updatedFaculty.getType());
         existing.setMecCode(updatedFaculty.getMecCode());
         existing.setCnpj(updatedFaculty.getCnpj());
         existing.setDeanName(updatedFaculty.getDeanName());
         existing.setPartnershipResponsible(updatedFaculty.getPartnershipResponsible());
         existing.setContactPhone(updatedFaculty.getContactPhone());
-        existing.setEmail(updatedFaculty.getEmail()); // ✅ Atualização do campo e-mail
+        existing.setEmail(updatedFaculty.getEmail());
         existing.setCity(updatedFaculty.getCity());
         existing.setState(updatedFaculty.getState());
+        existing.setLatitude(updatedFaculty.getLatitude()); // ✅ adicionado
+        existing.setLongitude(updatedFaculty.getLongitude()); // ✅ adicionado
         existing.setOfferedCourses(updatedFaculty.getOfferedCourses());
 
         return facultyRepository.save(existing);
     }
-
 }

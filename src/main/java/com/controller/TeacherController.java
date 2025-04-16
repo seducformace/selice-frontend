@@ -8,26 +8,29 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Controlador REST para operações com professores.
+ */
 @RestController
 @RequestMapping("/api/teachers")
-// Ajuste importante: não pode usar "*" com credenciais habilitadas
-@CrossOrigin(origins = "http://localhost:8081", allowCredentials = "true") // ajuste conforme necessário
+@CrossOrigin(origins = "http://localhost:8081", allowCredentials = "true")
 public class TeacherController {
 
     @Autowired
     private TeacherService teacherService;
 
     /**
-     * Cria um novo professor. O payload deve conter os IDs das escolas no campo `schools`.
+     * Cria um novo professor.
+     * Espera um JSON com os campos obrigatórios e ao menos uma escola vinculada.
      */
     @PostMapping
     public ResponseEntity<Teacher> createTeacher(@RequestBody Teacher teacher) {
         Teacher created = teacherService.createTeacher(teacher);
-        return ResponseEntity.ok(created);
+        return ResponseEntity.status(201).body(created); // 201 Created
     }
 
     /**
-     * Retorna a lista de todos os professores cadastrados.
+     * Retorna todos os professores cadastrados.
      */
     @GetMapping
     public ResponseEntity<List<Teacher>> getAllTeachers() {
@@ -36,7 +39,7 @@ public class TeacherController {
     }
 
     /**
-     * Atualiza um professor pelo ID.
+     * Atualiza um professor existente.
      */
     @PutMapping("/{id}")
     public ResponseEntity<Teacher> updateTeacher(@PathVariable Long id, @RequestBody Teacher teacher) {
@@ -50,6 +53,6 @@ public class TeacherController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTeacher(@PathVariable Long id) {
         teacherService.deleteTeacher(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.noContent().build(); // 204 No Content
     }
 }
