@@ -1,5 +1,6 @@
 package com.controller;
 
+import com.dto.StudentDTO;
 import com.model.Student;
 import com.service.StudentService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,41 +14,48 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/students")
 @Validated
-@CrossOrigin(origins = "http://localhost:8081", allowCredentials = "true") // Conexão com frontend garantida
+@CrossOrigin(origins = "http://localhost:8081", allowCredentials = "true")
 public class StudentController {
 
     @Autowired
     private StudentService studentService;
 
     /**
-     * Retorna todos os estudantes cadastrados.
+     * Lista todos os estudantes como DTOs com dados relacionados (faculdade, escola, professor).
      */
     @GetMapping
-    public ResponseEntity<List<Student>> getAllStudents() {
-        List<Student> list = studentService.getAllStudents();
-        return ResponseEntity.ok(list);
+    public ResponseEntity<List<StudentDTO>> getAllStudents() {
+        try {
+            List<StudentDTO> list = studentService.getAllStudentsAsDTO();
+            return ResponseEntity.ok(list);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     /**
-     * Retorna um estudante específico pelo ID.
+     * Retorna um estudante pelo ID.
      */
     @GetMapping("/{id}")
     public ResponseEntity<Student> getStudentById(@PathVariable Long id) {
-        Optional<Student> student = studentService.getStudentById(id);
-        return student.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        return studentService.getStudentById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**
-     * Retorna estudantes com horas pendentes menores ou iguais ao valor fornecido.
+     * Lista estudantes com horas pendentes menores ou iguais ao valor informado.
      */
     @GetMapping("/hours")
     public ResponseEntity<List<Student>> getStudentsByHours(@RequestParam int maxHours) {
-        List<Student> students = studentService.getStudentsByHours(maxHours);
-        if (students.isEmpty()) {
-            return ResponseEntity.noContent().build();
+        try {
+            List<Student> students = studentService.getStudentsByHours(maxHours);
+            return students.isEmpty()
+                    ? ResponseEntity.noContent().build()
+                    : ResponseEntity.ok(students);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
         }
-        return ResponseEntity.ok(students);
     }
 
     /**
@@ -55,8 +63,12 @@ public class StudentController {
      */
     @PostMapping
     public ResponseEntity<Student> createStudent(@RequestBody Student student) {
-        Student created = studentService.createStudent(student);
-        return ResponseEntity.status(201).body(created); // 201 Created
+        try {
+            Student created = studentService.createStudent(student);
+            return ResponseEntity.status(201).body(created);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     /**
@@ -64,16 +76,28 @@ public class StudentController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<Student> updateStudent(@PathVariable Long id, @RequestBody Student student) {
-        Student updated = studentService.updateStudent(id, student);
-        return ResponseEntity.ok(updated);
+        try {
+            Student updated = studentService.updateStudent(id, student);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     /**
-     * Exclui um estudante pelo ID.
+     * Remove um estudante existente pelo ID.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteStudent(@PathVariable Long id) {
-        studentService.deleteStudent(id);
-        return ResponseEntity.noContent().build(); // 204 No Content
+        try {
+            studentService.deleteStudent(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

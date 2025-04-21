@@ -11,27 +11,41 @@ import java.util.Optional;
 @Repository
 public interface StudentRepository extends JpaRepository<Student, Long> {
 
-    // Retorna alunos com horas pendentes abaixo ou igual ao valor especificado
+    // Buscar estudantes com horas pendentes abaixo de um limite
     List<Student> findByHoursPendingLessThanEqual(int hours);
 
-    // Busca aluno por e-mail
+    // Buscar estudante por e-mail (útil para autenticação ou verificação)
     Optional<Student> findByEmail(String email);
 
-    // Verifica se já existe aluno com o mesmo CPF
+    // Verifica duplicidade de CPF
     boolean existsByCpf(String cpf);
 
-    // Verifica se já existe aluno com o mesmo e-mail
+    // Verifica duplicidade de e-mail
     boolean existsByEmail(String email);
 
-    // Contagem de estagiários por status (para relatórios)
+    // Contagem por status do estágio (Enum)
     @Query("SELECT s.status, COUNT(s) FROM Student s GROUP BY s.status")
     List<Object[]> countByStatus();
 
-    // Contagem de estagiários por curso
+    // Contagem por curso
     @Query("SELECT s.course, COUNT(s) FROM Student s GROUP BY s.course")
     List<Object[]> countByCourse();
 
-    // Contagem por professor orientador
+    // Contagem por nome do professor orientador
     @Query("SELECT s.teacher.name, COUNT(s) FROM Student s GROUP BY s.teacher.name")
     List<Object[]> countByAdvisor();
+
+    /**
+     * Retorna estudantes com JOIN FETCH nas entidades relacionadas.
+     * Ideal para evitar LazyInitializationException ao acessar college, school e teacher.
+     *
+     * IMPORTANTE: Evite N+1 e garanta que os relacionamentos estejam presentes ou controlados com `@JsonIgnoreProperties`
+     */
+    @Query("""
+        SELECT s FROM Student s
+        LEFT JOIN FETCH s.college
+        LEFT JOIN FETCH s.school
+        LEFT JOIN FETCH s.teacher
+    """)
+    List<Student> findAllWithRelations();
 }

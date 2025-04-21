@@ -30,16 +30,16 @@ public class Student {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "faculty_id")
     @JsonIgnoreProperties({"students", "coordinators", "hibernateLazyInitializer", "handler"})
-    private Faculty faculty;
+    private Faculty college;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "school_id")
-    @JsonIgnoreProperties({"teachers", "coordinators", "students", "hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({"students", "teachers", "coordinators", "hibernateLazyInitializer", "handler"})
     private School school;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "teacher_id")
-    @JsonIgnoreProperties({"schools", "students", "hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({"students", "schools", "hibernateLazyInitializer", "handler"})
     private Teacher teacher;
 
     @Enumerated(EnumType.STRING)
@@ -47,13 +47,13 @@ public class Student {
     private InternshipStatus status = InternshipStatus.EM_ANDAMENTO;
 
     @Column(name = "hours_pending", nullable = false)
-    private int hoursPending = 0;
+    private Integer hoursPending = 0;
 
     @Column(name = "hours_completed", nullable = false)
-    private int hoursCompleted = 0;
+    private Integer hoursCompleted = 0;
 
     @Column(name = "hours_remaining", nullable = false)
-    private int hoursRemaining = 0;
+    private Integer hoursRemaining = 0;
 
     @Column(name = "registration_date", nullable = false)
     private LocalDateTime registrationDate;
@@ -69,135 +69,59 @@ public class Student {
     @PrePersist
     public void onCreate() {
         LocalDateTime now = LocalDateTime.now();
-        if (registrationDate == null) registrationDate = now;
-        createdAt = now;
-        updatedAt = now;
+        this.registrationDate = now;
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
     @PreUpdate
     public void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     // Getters e Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public Long getId() {
-        return id;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getCpf() { return cpf; }
+    public void setCpf(String cpf) { this.cpf = cpf; }
 
-    public String getName() {
-        return name;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getCourse() { return course; }
+    public void setCourse(String course) { this.course = course; }
 
-    public String getCpf() {
-        return cpf;
-    }
+    public Faculty getCollege() { return college; }
+    public void setCollege(Faculty college) { this.college = college; }
 
-    public void setCpf(String cpf) {
-        this.cpf = cpf;
-    }
+    public School getSchool() { return school; }
+    public void setSchool(School school) { this.school = school; }
 
-    public String getEmail() {
-        return email;
-    }
+    public Teacher getTeacher() { return teacher; }
+    public void setTeacher(Teacher teacher) { this.teacher = teacher; }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    public InternshipStatus getStatus() { return status; }
+    public void setStatus(InternshipStatus status) { this.status = status; }
 
-    public String getCourse() {
-        return course;
-    }
+    public Integer getHoursPending() { return hoursPending; }
+    public void setHoursPending(Integer hoursPending) { this.hoursPending = hoursPending; }
 
-    public void setCourse(String course) {
-        this.course = course;
-    }
+    public Integer getHoursCompleted() { return hoursCompleted; }
+    public void setHoursCompleted(Integer hoursCompleted) { this.hoursCompleted = hoursCompleted; }
 
-    public Faculty getFaculty() {
-        return faculty;
-    }
+    public Integer getHoursRemaining() { return hoursRemaining; }
+    public void setHoursRemaining(Integer hoursRemaining) { this.hoursRemaining = hoursRemaining; }
 
-    public void setFaculty(Faculty faculty) {
-        this.faculty = faculty;
-    }
+    public LocalDateTime getRegistrationDate() { return registrationDate; }
+    public void setRegistrationDate(LocalDateTime registrationDate) { this.registrationDate = registrationDate; }
 
-    public School getSchool() {
-        return school;
-    }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public void setSchool(School school) {
-        this.school = school;
-    }
-
-    public Teacher getTeacher() {
-        return teacher;
-    }
-
-    public void setTeacher(Teacher teacher) {
-        this.teacher = teacher;
-    }
-
-    public InternshipStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(InternshipStatus status) {
-        this.status = status;
-    }
-
-    public int getHoursPending() {
-        return hoursPending;
-    }
-
-    public void setHoursPending(int hoursPending) {
-        this.hoursPending = hoursPending;
-    }
-
-    public int getHoursCompleted() {
-        return hoursCompleted;
-    }
-
-    public void setHoursCompleted(int hoursCompleted) {
-        this.hoursCompleted = hoursCompleted;
-    }
-
-    public int getHoursRemaining() {
-        return hoursRemaining;
-    }
-
-    public void setHoursRemaining(int hoursRemaining) {
-        this.hoursRemaining = hoursRemaining;
-    }
-
-    public LocalDateTime getRegistrationDate() {
-        return registrationDate;
-    }
-
-    public void setRegistrationDate(LocalDateTime registrationDate) {
-        this.registrationDate = registrationDate;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }

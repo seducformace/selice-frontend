@@ -54,7 +54,7 @@ public class SchoolController {
     }
 
     /**
-     * Cadastra uma nova escola.
+     * Cadastra uma nova escola, incluindo campos como ideb, latitude e longitude.
      */
     @PostMapping
     public ResponseEntity<School> createSchool(@RequestBody School school) {
@@ -67,7 +67,7 @@ public class SchoolController {
     }
 
     /**
-     * Atualiza uma escola existente.
+     * Atualiza uma escola existente (incluindo ideb, latitude, longitude se vierem no JSON).
      */
     @PutMapping("/{id}")
     public ResponseEntity<School> updateSchool(@PathVariable Long id, @RequestBody School school) {

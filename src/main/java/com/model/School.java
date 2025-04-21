@@ -51,7 +51,16 @@ public class School {
     @Column(name = "inep_code")
     private String inepCode;
 
-    // Novo campo: coordenador principal
+    // NOVOS CAMPOS
+    @Column(name = "ideb")
+    private Double ideb;
+
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "main_coordinator_id")
     @JsonIgnoreProperties({"school", "college", "hibernateLazyInitializer", "handler"})
@@ -105,6 +114,15 @@ public class School {
     public String getInepCode() { return inepCode; }
     public void setInepCode(String inepCode) { this.inepCode = inepCode; }
 
+    public Double getIdeb() { return ideb; }
+    public void setIdeb(Double ideb) { this.ideb = ideb; }
+
+    public Double getLatitude() { return latitude; }
+    public void setLatitude(Double latitude) { this.latitude = latitude; }
+
+    public Double getLongitude() { return longitude; }
+    public void setLongitude(Double longitude) { this.longitude = longitude; }
+
     public Coordinator getCoordinator() { return coordinator; }
     public void setCoordinator(Coordinator coordinator) { this.coordinator = coordinator; }
 
@@ -127,6 +145,9 @@ public class School {
                 ", phone='" + phone + '\'' +
                 ", email='" + email + '\'' +
                 ", inepCode='" + inepCode + '\'' +
+                ", ideb=" + ideb +
+                ", latitude=" + latitude +
+                ", longitude=" + longitude +
                 '}';
     }
 }
