@@ -11,12 +11,16 @@ import java.util.List;
 @Repository
 public interface CoordinatorRepository extends JpaRepository<Coordinator, Long> {
 
+    // Verifica se já existe coordenador com o e-mail informado
+    boolean existsByEmail(String email);
+
+    // Verifica se já existe coordenador com o CPF informado
+    boolean existsByCpf(String cpf);
+
     // Coordenadores agrupados por curso
     @Query("SELECT c.department AS course, COUNT(c) AS total FROM Coordinator c GROUP BY c.department")
     List<CoordinatorCourseCount> getCoordinatorCountsByCourse();
 
-    // TODO: Se existir um campo representando relacionamento com curso, como 'List<Course> courses',
-    // então reative ou corrija este método.
-    // Exemplo: long countByCursosIsNull();
-    // long countByCoursesIsNull(); <-- REMOVIDO pois o campo 'courses' não existe na entidade Coordinator
+    // TODO: Se adicionar um campo de lista de cursos futuramente, reativar a consulta abaixo.
+    // long countByCoursesIsNull();
 }

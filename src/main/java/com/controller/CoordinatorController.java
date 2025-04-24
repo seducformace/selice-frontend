@@ -14,6 +14,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/coordinators")
+@CrossOrigin(origins = "http://localhost:8081", allowCredentials = "true")
 public class CoordinatorController {
 
     @Autowired
@@ -26,9 +27,11 @@ public class CoordinatorController {
     public ResponseEntity<Object> createCoordinator(@RequestBody Coordinator coordinator) {
         try {
             Coordinator newCoordinator = coordinatorService.createCoordinator(coordinator);
-            return ResponseEntity.ok(newCoordinator);
+            return ResponseEntity.status(201).body(newCoordinator);
         } catch (IllegalArgumentException | DataIntegrityViolationException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro ao criar coordenador.");
         }
     }
 
@@ -60,6 +63,8 @@ public class CoordinatorController {
             return ResponseEntity.ok(updatedCoordinator);
         } catch (IllegalArgumentException | DataIntegrityViolationException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro ao atualizar coordenador.");
         }
     }
 
@@ -73,6 +78,8 @@ public class CoordinatorController {
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro ao excluir coordenador.");
         }
     }
 }

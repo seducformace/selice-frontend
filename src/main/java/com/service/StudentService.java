@@ -2,8 +2,11 @@ package com.service;
 
 import com.dto.StudentDTO;
 import com.model.Student;
+import com.model.User;
 import com.repository.StudentRepository;
+import com.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,6 +18,12 @@ public class StudentService {
 
     @Autowired
     private StudentRepository studentRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     /**
      * Retorna todos os estudantes como entidades completas.
@@ -76,6 +85,19 @@ public class StudentService {
         student.setHoursCompleted(student.getHoursCompleted() == null ? 0 : student.getHoursCompleted());
         student.setHoursPending(student.getHoursPending() == null ? 0 : student.getHoursPending());
         student.setHoursRemaining(student.getHoursRemaining() == null ? 0 : student.getHoursRemaining());
+
+        // Cria usuário no banco com base no e-mail do estudante
+        userRepository.findByEmailIgnoreCase(student.getEmail()).ifPresentOrElse(
+                u -> {}, // Usuário já existe, não faz nada
+                () -> {
+                    User user = new User();
+                    user.setEmail(student.getEmail());
+                    user.setName(student.getName());
+                    user.setPassword(passwordEncoder.encode("123456"));
+                    user.setRole("STUDENT");
+                    userRepository.save(user);
+                }
+        );
 
         return studentRepository.save(student);
     }

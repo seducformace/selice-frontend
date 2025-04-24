@@ -1,13 +1,16 @@
 package com.service;
 
-import com.model.Faculty;
 import com.model.Coordinator;
+import com.model.Faculty;
 import com.model.School;
-import com.repository.FacultyRepository;
+import com.model.User;
 import com.repository.CoordinatorRepository;
+import com.repository.FacultyRepository;
 import com.repository.SchoolRepository;
+import com.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,12 +31,33 @@ public class CoordinatorService {
     @Autowired
     private SchoolRepository schoolRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     /**
-     * Cria um novo coordenador, validando vínculo com instituição.
+     * Cria um novo coordenador, validando vínculo com instituição e criando login.
      */
     public Coordinator createCoordinator(Coordinator coordinator) {
         validarDados(coordinator);
-        return coordinatorRepository.save(coordinator);
+
+        Coordinator saved = coordinatorRepository.save(coordinator);
+
+        // Criação automática de login
+        if (userRepository.findByEmailIgnoreCase(coordinator.getEmail()).isEmpty()) {
+            String papel = (coordinator.getFaculty() != null) ? "FACULTY_COORDINATOR" : "SCHOOL_COORDINATOR";
+            User newUser = new User(
+                    coordinator.getName(),
+                    coordinator.getEmail(),
+                    passwordEncoder.encode("123456"),
+                    papel
+            );
+            userRepository.save(newUser);
+        }
+
+        return saved;
     }
 
     /**
@@ -56,23 +80,14 @@ public class CoordinatorService {
         return coordinatorRepository.save(existing);
     }
 
-    /**
-     * Retorna todos os coordenadores cadastrados.
-     */
     public List<Coordinator> getAllCoordinators() {
         return coordinatorRepository.findAll();
     }
 
-    /**
-     * Retorna um coordenador específico pelo ID.
-     */
     public Optional<Coordinator> getCoordinatorById(Long id) {
         return coordinatorRepository.findById(id);
     }
 
-    /**
-     * Exclui um coordenador pelo ID.
-     */
     public void deleteCoordinator(Long id) {
         if (!coordinatorRepository.existsById(id)) {
             throw new IllegalArgumentException("Coordenador não encontrado com ID: " + id);
@@ -80,9 +95,6 @@ public class CoordinatorService {
         coordinatorRepository.deleteById(id);
     }
 
-    /**
-     * Verifica se os vínculos com instituições são válidos.
-     */
     private void validarDados(Coordinator coordinator) {
         if (coordinator.getFaculty() != null && coordinator.getSchool() != null) {
             throw new IllegalArgumentException("O coordenador não pode estar vinculado a uma faculdade e uma escola ao mesmo tempo.");

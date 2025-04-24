@@ -49,7 +49,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
                 .password(user.getPassword())
-                .roles(user.getRole()) // ✅ Corrigido: removido .name()
+                .roles(user.getRole().toUpperCase()) // <- Garante compatibilidade com Spring Security
                 .build();
     }
 }

@@ -2,10 +2,13 @@ package com.service;
 
 import com.model.School;
 import com.model.Teacher;
+import com.model.User;
 import com.repository.SchoolRepository;
 import com.repository.TeacherRepository;
+import com.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -23,14 +26,33 @@ public class TeacherService {
     @Autowired
     private SchoolRepository schoolRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     /**
-     * Cria um novo professor, garantindo que esteja vinculado a pelo menos uma escola válida.
+     * Cria um novo professor, garantindo que esteja vinculado a pelo menos uma escola válida,
+     * que CPF e e-mail não estejam duplicados, e cria automaticamente o login.
      */
     public Teacher createTeacher(Teacher teacher) {
+        // Validação de e-mail duplicado no repositório de professores e de usuários
+        if (teacherRepository.existsByEmail(teacher.getEmail()) || userRepository.findByEmailIgnoreCase(teacher.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Já existe um professor ou usuário com este e-mail.");
+        }
+
+        // Validação de CPF duplicado
+        if (teacherRepository.existsByCpf(teacher.getCpf())) {
+            throw new IllegalArgumentException("Já existe um professor com este CPF.");
+        }
+
+        // Validação da vinculação com pelo menos uma escola
         if (teacher.getSchools() == null || teacher.getSchools().isEmpty()) {
             throw new IllegalArgumentException("O professor deve estar vinculado a pelo menos uma escola.");
         }
 
+        // Busca e validação das escolas informadas
         List<School> validSchools = new ArrayList<>();
         for (School school : teacher.getSchools()) {
             School persisted = schoolRepository.findById(school.getId())
@@ -39,7 +61,18 @@ public class TeacherService {
         }
 
         teacher.setSchools(validSchools);
-        return teacherRepository.save(teacher);
+        Teacher savedTeacher = teacherRepository.save(teacher);
+
+        // Criação automática do usuário com senha padrão criptografada
+        User user = new User();
+        user.setName(teacher.getName());
+        user.setEmail(teacher.getEmail());
+        user.setPassword(passwordEncoder.encode("123456"));
+        user.setRole("TEACHER");
+
+        userRepository.save(user);
+
+        return savedTeacher;
     }
 
     /**
@@ -58,6 +91,7 @@ public class TeacherService {
         existing.setOrientedStudents(updatedTeacher.getOrientedStudents());
         existing.setStudentsInProgress(updatedTeacher.getStudentsInProgress());
 
+        // Atualização de escolas vinculadas
         List<School> updatedSchools = new ArrayList<>();
         for (School school : updatedTeacher.getSchools()) {
             School persisted = schoolRepository.findById(school.getId())
