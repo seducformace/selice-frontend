@@ -1,30 +1,86 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
-// Importações das views
 import Dashboard from '@/views/Dashboard.vue';
-import Faculties from '@/views/Faculties.vue';
+import FacultiesPage from '@/views/FacultiesPage.vue';
 import CoordinatorPage from '@/views/CoordinatorPage.vue';
 import StudentsPage from '@/views/StudentsPage.vue';
 import ProfessorsPage from '@/views/ProfessorsPage.vue';
-import SchoolsPage from '@/views/SchoolsPage.vue'; // ✅ Nome atualizado corretamente
-import Reports from '@/views/Reports.vue';
+import SchoolsPage from '@/views/SchoolsPage.vue';
+import ReportsPage from '@/views/ReportsPage.vue';
+import AttendanceDiary from '@/views/AttendanceDiary.vue';
+import StudentsByTeacher from '@/views/StudentsByTeacher.vue';
+import DashboardProfessor from '@/views/DashboardProfessor.vue';
+import CoordinatorDashboard from '@/views/CoordinatorDashboard.vue';
+import DashboardStudent from '@/views/DashboardStudent.vue';
+import DiaryView from '@/views/DiaryView.vue';
+import StudentReportView from '@/views/StudentReportView.vue';
 
 const routes = [
-  // Página de login
   {
     path: '/login',
     name: 'Login',
     component: () => import('@/views/Login.vue'),
     meta: { title: 'Login', requiresAuth: false },
   },
-
-  // Redirecionamento da raiz para login
+  {
+    path: '/students-by-teacher-test',
+    name: 'StudentsByTeacher',
+    component: StudentsByTeacher,
+    meta: { title: 'Meus Estudantes', requiresAuth: true },
+  },
+  {
+    path: '/diary-test',
+    name: 'AttendanceDiary',
+    component: AttendanceDiary,
+    props: (route) => ({ studentId: Number(route.query.studentId) }),
+    meta: { title: 'Diário de Presença', requiresAuth: true },
+  },
+  {
+    path: '/diary-view',
+    name: 'DiaryView',
+    component: DiaryView,
+    meta: { title: 'Meu Diário de Presença', requiresAuth: true },
+  },
+  {
+    path: '/student-report',
+    name: 'StudentReportView',
+    component: StudentReportView,
+    meta: { title: 'Meus Relatórios', requiresAuth: true },
+  },
+  {
+    path: '/dashboard-professor',
+    name: 'DashboardProfessor',
+    component: DashboardProfessor,
+    meta: { title: 'Painel do Professor', requiresAuth: true },
+  },
+  {
+    path: '/dashboard-coordinator',
+    name: 'CoordinatorDashboard',
+    component: CoordinatorDashboard,
+    meta: { title: 'Painel do Coordenador', requiresAuth: true },
+  },
+  {
+    path: '/dashboard-coordinator-faculty',
+    name: 'CoordinatorDashboardFaculty',
+    component: CoordinatorDashboard,
+    meta: { title: 'Painel do Coordenador (Faculdade)', requiresAuth: true },
+  },
+  {
+    path: '/dashboard-coordinator-school',
+    name: 'CoordinatorDashboardSchool',
+    component: CoordinatorDashboard,
+    meta: { title: 'Painel do Coordenador (Escola)', requiresAuth: true },
+  },
+  {
+    path: '/dashboard-student',
+    name: 'DashboardStudent',
+    component: DashboardStudent,
+    meta: { title: 'Painel do Estudante', requiresAuth: true },
+  },
   {
     path: '/',
     redirect: '/login',
   },
-
-  // Rotas protegidas (necessitam autenticação via JWT)
   {
     path: '/dashboard',
     name: 'Dashboard',
@@ -33,8 +89,8 @@ const routes = [
   },
   {
     path: '/faculties',
-    name: 'Faculties',
-    component: Faculties,
+    name: 'FacultiesPage',
+    component: FacultiesPage,
     meta: { title: 'Gerenciamento de Faculdades', requiresAuth: true },
   },
   {
@@ -45,7 +101,7 @@ const routes = [
   },
   {
     path: '/students',
-    name: 'Students',
+    name: 'StudentsPage',
     component: StudentsPage,
     meta: { title: 'Gerenciamento de Estudantes', requiresAuth: true },
   },
@@ -57,14 +113,14 @@ const routes = [
   },
   {
     path: '/schools',
-    name: 'SchoolsPage', // ✅ Renomeado para manter consistência
+    name: 'SchoolsPage',
     component: SchoolsPage,
     meta: { title: 'Gerenciamento de Escolas', requiresAuth: true },
   },
   {
     path: '/reports',
-    name: 'Reports',
-    component: Reports,
+    name: 'ReportsPage',
+    component: ReportsPage,
     meta: { title: 'Relatórios', requiresAuth: true },
   },
 ];
@@ -74,20 +130,52 @@ const router = createRouter({
   routes,
 });
 
-// Middleware de proteção de rotas baseado em token JWT
 router.beforeEach((to, from, next) => {
   document.title = to.meta.title || 'Sistema de Gerenciamento';
 
   const token = localStorage.getItem('token');
-  const isAuthenticated = !!token;
+  const isAuthenticated = token && token !== 'null' && token !== 'undefined';
 
+  // Se a rota exige autenticação e o usuário NÃO está autenticado
   if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login');
-  } else if (to.path === '/login' && isAuthenticated) {
-    next('/dashboard');
-  } else {
-    next();
+    return next('/login');
   }
+
+  // Se o usuário já está autenticado e tenta acessar o login
+  if (to.path === '/login' && isAuthenticated) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const role =
+        payload.role ||
+        (payload.authorities &&
+          (typeof payload.authorities[0] === 'object'
+            ? payload.authorities[0].authority
+            : payload.authorities[0]));
+
+      const roleRouteMap = {
+        ROLE_ADMIN: '/dashboard',
+        ROLE_COORDINATOR_FACULTY: '/dashboard-coordinator-faculty',
+        ROLE_COORDINATOR_SCHOOL: '/dashboard-coordinator-school',
+        ROLE_TEACHER: '/dashboard-professor',
+        ROLE_STUDENT: '/dashboard-student',
+      };
+
+      const redirectPath = roleRouteMap[role] || '/dashboard';
+
+      if (to.path !== redirectPath) {
+        return next(redirectPath);
+      } else {
+        return next();
+      }
+    } catch (error) {
+      console.error('[Router Guard] Erro ao decodificar token:', error);
+      localStorage.removeItem('token');
+      localStorage.removeItem('userEmail');
+      return next('/login');
+    }
+  }
+
+  return next();
 });
 
 export default router;

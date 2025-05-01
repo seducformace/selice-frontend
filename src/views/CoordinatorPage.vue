@@ -1,7 +1,5 @@
 <template>
   <div class="coordinators-page">
-    <Header />
-
     <div class="content-wrapper">
       <div class="content">
         <div class="header-actions">
@@ -30,7 +28,8 @@
                 <th>Nome</th>
                 <th>E-mail</th>
                 <th>Telefone</th>
-                <th>Faculdade</th>
+                <th>CPF</th>
+                <th>Instituição</th>
                 <th>Curso Responsável</th>
                 <th>Status</th>
                 <th>Ações</th>
@@ -44,7 +43,12 @@
                 <td>{{ coordinator.name }}</td>
                 <td>{{ coordinator.email }}</td>
                 <td>{{ coordinator.phone }}</td>
-                <td>{{ coordinator.faculty }}</td>
+                <td>{{ coordinator.cpf }}</td>
+                <td>
+                  {{
+                    coordinator.college?.name || coordinator.school?.name || '—'
+                  }}
+                </td>
                 <td>{{ coordinator.course }}</td>
                 <td>
                   <span
@@ -120,6 +124,16 @@
               </div>
 
               <div class="form-group">
+                <label for="cpf">CPF</label>
+                <input
+                  id="cpf"
+                  v-model="currentCoordinator.cpf"
+                  type="text"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
                 <label for="phone">Telefone</label>
                 <input
                   id="phone"
@@ -130,37 +144,22 @@
               </div>
 
               <div class="form-group">
-                <label for="college">Faculdade</label>
+                <label for="institution">Faculdade / Escola</label>
                 <select
-                  id="college"
-                  v-model="currentCoordinator.collegeId"
+                  id="institution"
+                  v-model="currentCoordinator.institutionId"
+                  @change="handleInstitutionChange"
                   required
                 >
-                  <option disabled value="">Selecione a Faculdade</option>
+                  <option disabled value="">Selecione uma instituição</option>
                   <option
-                    v-for="fac in collegesList"
-                    :key="fac.id"
-                    :value="fac.id"
+                    v-for="inst in institutionsList"
+                    :key="`${inst.type}-${inst.id}`"
+                    :value="inst.id"
                   >
-                    {{ fac.name }}
-                  </option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label for="school">Escola</label>
-                <select
-                  id="school"
-                  v-model="currentCoordinator.schoolId"
-                  required
-                >
-                  <option disabled value="">Selecione a Escola</option>
-                  <option
-                    v-for="school in schoolsList"
-                    :key="school.id"
-                    :value="school.id"
-                  >
-                    {{ school.name }}
+                    {{ inst.name }} ({{
+                      inst.type === 'college' ? 'Faculdade' : 'Escola'
+                    }})
                   </option>
                 </select>
               </div>
@@ -202,16 +201,13 @@
     <Footer class="footer-fixed" />
   </div>
 </template>
-
 <script>
-import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
 import { api } from '@/services/api';
 
 export default {
   name: 'CoordinatorPage',
   components: {
-    Header,
     Footer,
   },
   data() {
@@ -225,15 +221,17 @@ export default {
         id: null,
         name: '',
         email: '',
+        cpf: '',
         phoneNumber: '',
         department: '',
         status: 'Ativo',
-        collegeId: null,
-        schoolId: null, // campo de escola adicionado
+        institutionId: null,
+        institutionType: '',
       },
       coordinators: [],
+      institutionsList: [],
       collegesList: [],
-      schoolsList: [], // lista de escolas
+      schoolsList: [],
     };
   },
 
@@ -263,10 +261,11 @@ export default {
         const response = await api.get('/coordinators');
         this.coordinators = response.data.map((c) => ({
           ...c,
-          college: c.college || null,
+          college: c.faculty || null,
           school: c.school || null,
           course: c.department || '—',
           phone: c.phoneNumber || '',
+          cpf: c.cpf || '',
           status: c.status || 'Ativo',
         }));
       } catch (error) {
@@ -274,22 +273,31 @@ export default {
       }
     },
 
-    async fetchFaculties() {
+    async fetchInstitutions() {
       try {
-        const response = await api.get('/faculties');
-        this.collegesList = response.data;
+        const [collegesResponse, schoolsResponse] = await Promise.all([
+          api.get('/faculties'),
+          api.get('/schools'),
+        ]);
+
+        this.collegesList = collegesResponse.data;
+        this.schoolsList = schoolsResponse.data;
+
+        this.institutionsList = [
+          ...this.collegesList.map((c) => ({ ...c, type: 'college' })),
+          ...this.schoolsList.map((s) => ({ ...s, type: 'school' })),
+        ];
       } catch (error) {
-        console.error('Erro ao carregar faculdades:', error);
+        console.error('Erro ao carregar instituições:', error);
       }
     },
 
-    async fetchSchools() {
-      try {
-        const response = await api.get('/schools');
-        this.schoolsList = response.data;
-      } catch (error) {
-        console.error('Erro ao carregar escolas:', error);
-      }
+    handleInstitutionChange() {
+      const selected = this.institutionsList.find(
+        (inst) => inst.id === this.currentCoordinator.institutionId
+      );
+
+      this.currentCoordinator.institutionType = selected?.type || '';
     },
 
     openModal() {
@@ -305,36 +313,64 @@ export default {
     editCoordinator(index) {
       const selected = this.coordinators[index];
       this.isEditing = true;
+
+      let institutionId = null;
+      let institutionType = '';
+
+      if (selected.college) {
+        institutionId = selected.college.id;
+        institutionType = 'college';
+      } else if (selected.school) {
+        institutionId = selected.school.id;
+        institutionType = 'school';
+      }
+
       this.currentCoordinator = {
         id: selected.id,
         name: selected.name,
         email: selected.email,
+        cpf: selected.cpf,
         phoneNumber: selected.phone,
         department: selected.course,
         status: selected.status,
-        collegeId: selected.college?.id || null,
-        schoolId: selected.school?.id || null,
+        institutionId,
+        institutionType,
       };
+
       this.isModalOpen = true;
     },
 
     async saveCoordinator() {
       try {
+        if (
+          !this.currentCoordinator.institutionType ||
+          !this.currentCoordinator.institutionId
+        ) {
+          alert('Selecione uma Faculdade ou Escola antes de salvar.');
+          return;
+        }
+
         const payload = {
-          name: this.currentCoordinator.name,
-          email: this.currentCoordinator.email,
-          phoneNumber: this.currentCoordinator.phoneNumber,
-          department: this.currentCoordinator.department,
+          name: this.currentCoordinator.name?.trim(),
+          email: this.currentCoordinator.email?.trim(),
+          cpf: this.currentCoordinator.cpf?.trim(),
+          phoneNumber: this.currentCoordinator.phoneNumber?.trim(),
+          department: this.currentCoordinator.department?.trim(),
           status: this.currentCoordinator.status,
-          college: this.currentCoordinator.collegeId
-            ? { id: this.currentCoordinator.collegeId }
-            : null,
-          school: this.currentCoordinator.schoolId
-            ? { id: this.currentCoordinator.schoolId }
-            : null,
+          faculty: null,
+          school: null,
         };
 
-        console.log('Payload enviado:', payload);
+        if (this.currentCoordinator.institutionType === 'college') {
+          payload.faculty = { id: this.currentCoordinator.institutionId };
+        } else if (this.currentCoordinator.institutionType === 'school') {
+          payload.school = { id: this.currentCoordinator.institutionId };
+        }
+
+        if (!payload.faculty && !payload.school) {
+          alert('Erro: Nenhuma instituição vinculada.');
+          return;
+        }
 
         if (this.isEditing && this.currentCoordinator.id) {
           await api.put(`/coordinators/${this.currentCoordinator.id}`, payload);
@@ -345,7 +381,10 @@ export default {
         await this.fetchCoordinators();
         this.closeModal();
       } catch (error) {
-        console.error('Erro ao salvar coordenador:', error);
+        console.error(
+          'Erro ao salvar coordenador:',
+          error?.response?.data || error
+        );
         alert(
           'Erro ao salvar coordenador. Verifique os dados e tente novamente.'
         );
@@ -370,19 +409,19 @@ export default {
         id: null,
         name: '',
         email: '',
+        cpf: '',
         phoneNumber: '',
         department: '',
         status: 'Ativo',
-        collegeId: null,
-        schoolId: null,
+        institutionId: null,
+        institutionType: '',
       };
     },
   },
 
   mounted() {
     this.fetchCoordinators();
-    this.fetchFaculties();
-    this.fetchSchools();
+    this.fetchInstitutions();
   },
 };
 </script>

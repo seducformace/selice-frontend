@@ -1,11 +1,7 @@
 <template>
   <div class="faculties-page">
-    <!-- Cabeçalho -->
-    <Header />
-
     <div class="content-wrapper">
       <div class="content">
-        <!-- Botão Home e Título da Página -->
         <div class="header-actions">
           <button class="home-button" @click="goHome">
             <i class="fas fa-home"></i>
@@ -13,7 +9,6 @@
           <h1>Gestão de Faculdades</h1>
         </div>
 
-        <!-- Ações: Botão para adicionar nova faculdade e campo de busca -->
         <div class="actions">
           <button class="add-button" @click="openModal">
             Adicionar Nova Faculdade
@@ -26,7 +21,6 @@
           />
         </div>
 
-        <!-- Tabela de Faculdades -->
         <div class="table-container">
           <table class="faculties-table">
             <thead>
@@ -37,6 +31,7 @@
                 <th>Reitor</th>
                 <th>Responsável pela Parceria</th>
                 <th style="width: 200px">Contato</th>
+                <th>E-mail</th>
                 <th>Cidade</th>
                 <th>Estado</th>
                 <th>Cursos Oferecidos</th>
@@ -51,6 +46,7 @@
                 <td>{{ faculty.deanName }}</td>
                 <td>{{ faculty.partnershipResponsible }}</td>
                 <td>{{ faculty.contactPhone }}</td>
+                <td>{{ faculty.email }}</td>
                 <td>{{ faculty.city }}</td>
                 <td>{{ faculty.state }}</td>
                 <td>
@@ -80,61 +76,51 @@
         </div>
       </div>
 
-      <!-- Modal para Adicionar/Editar Faculdades (2 colunas) -->
+      <!-- Modal -->
       <div v-if="isModalOpen" class="modal-overlay">
         <div class="modal-form-box">
           <h2>{{ isEditing ? 'Editar Faculdade' : 'Adicionar Faculdade' }}</h2>
 
-          <!-- Formulário em Grid, 2 colunas -->
           <form @submit.prevent="saveFaculty" class="faculty-form">
-            <!-- Código MEC -->
             <div class="form-group">
               <label for="mecCode">Código MEC</label>
               <input
                 id="mecCode"
                 v-model="currentFaculty.mecCode"
                 type="text"
-                placeholder="Código MEC"
               />
             </div>
 
-            <!-- Nome da Faculdade -->
             <div class="form-group">
               <label for="name">Nome da Faculdade</label>
               <input
                 id="name"
                 v-model="currentFaculty.name"
                 type="text"
-                placeholder="Nome da Faculdade"
                 required
               />
             </div>
 
-            <!-- CNPJ -->
             <div class="form-group">
               <label for="cnpj">CNPJ</label>
               <input
                 id="cnpj"
                 v-model="currentFaculty.cnpj"
                 type="text"
-                placeholder="CNPJ"
                 required
               />
             </div>
 
-            <!-- Nome do Reitor -->
             <div class="form-group">
               <label for="rector">Nome do Reitor</label>
               <input
                 id="rector"
                 v-model="currentFaculty.rector"
                 type="text"
-                placeholder="Nome do Reitor"
                 required
               />
             </div>
 
-            <!-- Responsável pela Parceria -->
             <div class="form-group">
               <label for="partnershipResponsible"
                 >Responsável pela Parceria</label
@@ -143,24 +129,30 @@
                 id="partnershipResponsible"
                 v-model="currentFaculty.partnershipResponsible"
                 type="text"
-                placeholder="Responsável pela Parceria"
                 required
               />
             </div>
 
-            <!-- Contato (Telefone) -->
             <div class="form-group">
               <label for="contact">Contato (Telefone)</label>
               <input
                 id="contact"
                 v-model="currentFaculty.contact"
                 type="text"
-                placeholder="Contato (Telefone)"
                 required
               />
             </div>
 
-            <!-- Cidade -->
+            <div class="form-group">
+              <label for="email">E-mail</label>
+              <input
+                id="email"
+                v-model="currentFaculty.email"
+                type="email"
+                required
+              />
+            </div>
+
             <div class="form-group">
               <label for="city">Cidade</label>
               <select id="city" v-model="currentFaculty.city" required>
@@ -171,19 +163,16 @@
               </select>
             </div>
 
-            <!-- Estado (fixo) -->
             <div class="form-group">
               <label for="state">Estado</label>
               <input
                 id="state"
                 v-model="currentFaculty.state"
                 type="text"
-                value="Ceará"
                 readonly
               />
             </div>
 
-            <!-- Cursos Oferecidos (vários) -->
             <div class="form-group courses-group">
               <label for="courses">Cursos Oferecidos</label>
               <div class="courses-multiple">
@@ -212,7 +201,6 @@
               </div>
             </div>
 
-            <!-- Botões Salvar/Cancelar -->
             <div class="form-buttons">
               <button type="submit" class="save-button">Salvar</button>
               <button type="button" class="cancel-button" @click="closeModal">
@@ -224,20 +212,16 @@
       </div>
     </div>
 
-    <!-- Rodapé -->
     <Footer class="footer-fixed" />
   </div>
 </template>
-
 <script>
-import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
 import { api } from '@/services/api';
 
 export default {
   name: 'FacultiesPage',
   components: {
-    Header,
     Footer,
   },
   data() {
@@ -252,6 +236,7 @@ export default {
         rector: '',
         partnershipResponsible: '',
         contact: '',
+        email: '',
         city: '',
         state: 'Ceará',
         courses: [],
@@ -444,7 +429,6 @@ export default {
         'Várzea Alegre',
         'Viçosa do Ceará',
       ],
-
       courses: [
         'Artes Visuais',
         'Artes Cênicas',
@@ -470,7 +454,6 @@ export default {
       );
     },
   },
-
   methods: {
     goHome() {
       this.$router.push('/dashboard');
@@ -483,29 +466,26 @@ export default {
     closeModal() {
       this.isModalOpen = false;
     },
-
     editFaculty(index) {
-      this.isEditing = true;
       const selected = this.faculties[index];
-
       this.currentFaculty = {
         id: selected.id,
         name: selected.name,
         mecCode: selected.mecCode,
         cnpj: selected.cnpj,
-        rector: selected.deanName, // Mapeando corretamente
+        rector: selected.deanName,
         partnershipResponsible: selected.partnershipResponsible,
-        contact: selected.contactPhone, // Mapeando corretamente
+        contact: selected.contactPhone,
+        email: selected.email ?? '',
         city: selected.city,
         state: selected.state,
         courses: Array.isArray(selected.offeredCourses)
           ? [...selected.offeredCourses]
           : [],
       };
-
+      this.isEditing = true;
       this.isModalOpen = true;
     },
-
     async saveFaculty() {
       try {
         const requiredFields = {
@@ -516,6 +496,7 @@ export default {
           'Responsável pela Parceria':
             this.currentFaculty.partnershipResponsible,
           Contato: this.currentFaculty.contact,
+          'E-mail': this.currentFaculty.email,
           Cidade: this.currentFaculty.city,
         };
 
@@ -533,6 +514,7 @@ export default {
           deanName: this.currentFaculty.rector,
           partnershipResponsible: this.currentFaculty.partnershipResponsible,
           contactPhone: this.currentFaculty.contact,
+          email: this.currentFaculty.email,
           city: this.currentFaculty.city,
           state: this.currentFaculty.state,
           offeredCourses: this.currentFaculty.courses,
@@ -550,20 +532,12 @@ export default {
         this.closeModal();
       } catch (error) {
         console.error('Erro ao salvar faculdade:', error);
-        if (
-          error.response &&
-          error.response.data &&
-          error.response.data.message
-        ) {
-          alert(`Erro: ${error.response.data.message}`);
-        } else {
-          alert(
+        alert(
+          error.response?.data?.message ||
             'Erro ao salvar faculdade. Verifique os dados e tente novamente.'
-          );
-        }
+        );
       }
     },
-
     async deleteFaculty(index) {
       try {
         const faculty = this.faculties[index];
@@ -580,11 +554,12 @@ export default {
         const response = await api.get('/faculties');
         this.faculties = response.data.map((f) => ({
           ...f,
-          // Normaliza os nomes dos campos para o que o template espera
-          deanName: f.dean_name,
-          contactPhone: f.contact_phone,
-          partnershipResponsible: f.partnership_responsible,
-          courses: f.offeredCourses || [],
+          deanName: f.deanName ?? f.dean_name ?? '',
+          contactPhone: f.contactPhone ?? f.contact_phone ?? '',
+          partnershipResponsible:
+            f.partnershipResponsible ?? f.partnership_responsible ?? '',
+          email: f.email ?? '',
+          offeredCourses: f.offeredCourses ?? f.courses ?? [],
         }));
       } catch (error) {
         console.error('Erro ao carregar faculdades:', error);
@@ -598,6 +573,7 @@ export default {
         rector: '',
         partnershipResponsible: '',
         contact: '',
+        email: '',
         city: '',
         state: 'Ceará',
         courses: [],
@@ -613,8 +589,8 @@ export default {
       }
       this.newCourse = '';
     },
-    removeCourse(courseIndex) {
-      this.currentFaculty.courses.splice(courseIndex, 1);
+    removeCourse(index) {
+      this.currentFaculty.courses.splice(index, 1);
     },
   },
   mounted() {

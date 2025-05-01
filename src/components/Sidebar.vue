@@ -1,7 +1,11 @@
 <template>
   <aside class="sidebar">
     <ul class="menu">
-      <li v-for="(item, index) in menuItems" :key="index" class="menu-item">
+      <li
+        v-for="(item, index) in filteredMenuItems"
+        :key="index"
+        class="menu-item"
+      >
         <router-link :to="item.route" class="menu-link">
           <i :class="item.icon" class="menu-icon"></i>
           <span class="menu-text">{{ item.label }}</span>
@@ -12,6 +16,8 @@
 </template>
 
 <script>
+import jwt_decode from 'jwt-decode';
+
 export default {
   name: 'Sidebar',
   data() {
@@ -20,40 +26,76 @@ export default {
         {
           label: 'Dashboard',
           icon: 'fas fa-home',
-          route: '/',
+          route: '/dashboard',
+          roles: ['ROLE_ADMIN'],
         },
         {
           label: 'Faculdades',
           icon: 'fas fa-university',
           route: '/faculties',
+          roles: ['ROLE_ADMIN'],
         },
         {
           label: 'Coordenadores',
           icon: 'fas fa-chalkboard-teacher',
           route: '/coordinators',
+          roles: ['ROLE_ADMIN'],
         },
         {
           label: 'Alunos',
           icon: 'fas fa-user-graduate',
           route: '/students',
+          roles: [
+            'ROLE_ADMIN',
+            'ROLE_COORDINATOR_FACULTY',
+            'ROLE_COORDINATOR_SCHOOL',
+          ],
         },
         {
           label: 'Professores',
           icon: 'fas fa-user-tie',
           route: '/professors',
+          roles: ['ROLE_ADMIN'],
         },
         {
           label: 'Escolas',
           icon: 'fas fa-school',
           route: '/schools',
+          roles: ['ROLE_ADMIN'],
         },
         {
           label: 'Relatórios',
           icon: 'fas fa-chart-bar',
           route: '/reports',
+          roles: [
+            'ROLE_ADMIN',
+            'ROLE_COORDINATOR_FACULTY',
+            'ROLE_COORDINATOR_SCHOOL',
+          ],
         },
       ],
     };
+  },
+  computed: {
+    userRole() {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return null;
+        const decoded = jwt_decode(token);
+        const role =
+          decoded.role ||
+          (decoded.authorities && decoded.authorities[0]?.authority);
+        return role ? role.toUpperCase() : null;
+      } catch (e) {
+        console.error('[Sidebar] Erro ao decodificar token:', e);
+        return null;
+      }
+    },
+    filteredMenuItems() {
+      return this.menuItems.filter((item) =>
+        item.roles.includes(this.userRole)
+      );
+    },
   },
 };
 </script>

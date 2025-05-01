@@ -1,11 +1,8 @@
 <template>
   <div class="professors-page">
-    <!-- Cabeçalho (Header) -->
-    <Header />
-
     <div class="content-wrapper">
       <div class="content">
-        <!-- Barra Superior: Botão Home + Título -->
+        <!-- Cabeçalho -->
         <div class="header-actions">
           <button class="home-button" @click="goToDashboard">
             <i class="fas fa-home"></i>
@@ -13,7 +10,7 @@
           <h1>Gestão de Professores</h1>
         </div>
 
-        <!-- Ações: Botão para adicionar professor e campo de busca -->
+        <!-- Ações -->
         <div class="actions">
           <button class="add-button" @click="openModal">
             Adicionar Novo Professor
@@ -32,23 +29,32 @@
             <thead>
               <tr>
                 <th>Nome</th>
+                <th>CPF</th>
+                <th>E-mail</th>
                 <th>Matrícula</th>
                 <th>Certificação</th>
                 <th>Disciplina</th>
                 <th>Escolas</th>
                 <th>Orientados (0-10)</th>
-                <!-- Removemos o campo “Em Andamento” -->
                 <th>Ações</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="(professor, index) in filteredProfessors" :key="index">
                 <td>{{ professor.name }}</td>
+                <td>{{ professor.cpf }}</td>
+                <td>{{ professor.email }}</td>
                 <td>{{ professor.registration }}</td>
-                <td>{{ professor.certification }}</td>
+                <td>{{ professor.qualification }}</td>
                 <td>{{ professor.discipline }}</td>
-                <!-- Exibe array de escolas separadas por vírgula -->
-                <td>{{ professor.schools.join(', ') }}</td>
+                <td>
+                  <ul v-if="professor.schools && professor.schools.length">
+                    <li v-for="s in professor.schools" :key="s.id">
+                      {{ s.name }}
+                    </li>
+                  </ul>
+                  <span v-else>—</span>
+                </td>
                 <td>{{ professor.orientedStudents }}</td>
                 <td class="actions-buttons">
                   <button class="edit-button" @click="editProfessor(index)">
@@ -64,11 +70,10 @@
         </div>
       </div>
 
-      <!-- Modal (2 colunas) para adicionar/editar professor -->
+      <!-- Modal de Cadastro -->
       <div v-if="isModalOpen" class="modal-overlay">
         <div class="modal-form-box">
           <h2>{{ isEditing ? 'Editar Professor' : 'Adicionar Professor' }}</h2>
-          <!-- Formulário em grid de 2 colunas -->
           <form @submit.prevent="saveProfessor" class="professor-form">
             <!-- Nome -->
             <div class="form-group">
@@ -77,6 +82,28 @@
                 id="name"
                 v-model="currentProfessor.name"
                 type="text"
+                required
+              />
+            </div>
+
+            <!-- CPF -->
+            <div class="form-group">
+              <label for="cpf">CPF</label>
+              <input
+                id="cpf"
+                v-model="currentProfessor.cpf"
+                type="text"
+                required
+              />
+            </div>
+
+            <!-- E-mail -->
+            <div class="form-group">
+              <label for="email">E-mail</label>
+              <input
+                id="email"
+                v-model="currentProfessor.email"
+                type="email"
                 required
               />
             </div>
@@ -92,13 +119,15 @@
               />
             </div>
 
-            <!-- Certificação (Especialista, Graduado, Mestrado, Doutorado) -->
+            <!-- Certificação -->
             <div class="form-group">
-              <label for="certification">Certificação</label>
+              <label for="qualification">Certificação</label>
               <select
-                id="certification"
-                v-model="currentProfessor.certification"
+                id="qualification"
+                v-model="currentProfessor.qualification"
+                required
               >
+                <option value="" disabled>Selecione</option>
                 <option value="Especialista">Especialista</option>
                 <option value="Graduado">Graduado</option>
                 <option value="Mestrado">Mestrado</option>
@@ -106,7 +135,7 @@
               </select>
             </div>
 
-            <!-- Disciplina (licenciaturas) -->
+            <!-- Disciplina -->
             <div class="form-group">
               <label for="discipline">Disciplina</label>
               <select
@@ -121,7 +150,7 @@
               </select>
             </div>
 
-            <!-- Escolas: múltiplas seleções via select + botão “Adicionar” -->
+            <!-- Escolas -->
             <div class="form-group">
               <label for="selectedSchool">Escolas (Públicas CE)</label>
               <div class="school-select-wrapper">
@@ -129,10 +158,10 @@
                   <option value="" disabled>Selecione uma Escola</option>
                   <option
                     v-for="school in cearaPublicSchools"
-                    :key="school"
+                    :key="school.id"
                     :value="school"
                   >
-                    {{ school }}
+                    {{ school.name }}
                   </option>
                 </select>
                 <button
@@ -143,15 +172,26 @@
                   Adicionar
                 </button>
               </div>
-              <!-- Exibe lista de escolas já adicionadas -->
+
+              <!-- Escolas Adicionadas -->
               <ul class="school-list" v-if="currentProfessor.schools.length">
-                <li v-for="(sch, idx) in currentProfessor.schools" :key="idx">
-                  {{ sch }}
+                <li
+                  v-for="(sch, idx) in currentProfessor.schools"
+                  :key="'added-' + idx"
+                >
+                  {{ sch.name }}
+                  <button
+                    type="button"
+                    class="remove-school"
+                    @click="removeSchool(idx)"
+                  >
+                    Remover
+                  </button>
                 </li>
               </ul>
             </div>
 
-            <!-- Orientados: caixa suspensa de 0..10 -->
+            <!-- Orientados -->
             <div class="form-group">
               <label for="orientedStudents">Orientados (0-10)</label>
               <select
@@ -164,7 +204,7 @@
               </select>
             </div>
 
-            <!-- Botões (Salvar/Cancelar) -->
+            <!-- Botões -->
             <div class="form-buttons">
               <button type="submit" class="save-button">Salvar</button>
               <button type="button" class="cancel-button" @click="closeModal">
@@ -176,22 +216,16 @@
       </div>
     </div>
 
-    <!-- Rodapé fixo -->
     <Footer class="footer-fixed" />
   </div>
 </template>
-
 <script>
-import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
 import { api } from '@/services/api';
 
 export default {
   name: 'ProfessorsPage',
-  components: {
-    Header,
-    Footer,
-  },
+  components: { Footer },
   data() {
     return {
       searchQuery: '',
@@ -199,11 +233,14 @@ export default {
       isEditing: false,
       currentProfessor: {
         name: '',
+        cpf: '',
+        email: '',
         registration: '',
-        certification: '',
+        qualification: '',
         discipline: '',
         schools: [],
         orientedStudents: 0,
+        studentsInProgress: 0,
       },
       professors: [],
       licensureCourses: [
@@ -219,14 +256,8 @@ export default {
         'Espanhol',
         'Educação Física',
       ],
-      cearaPublicSchools: [
-        'EEFM Paulo Sarasate',
-        'EEFM Governador Adauto Bezerra',
-        'EEFM Liceu do Ceará',
-        'EEFM Domingos Sávio',
-        'EEFM César Cals',
-      ],
-      selectedSchool: '',
+      cearaPublicSchools: [],
+      selectedSchool: null,
     };
   },
   computed: {
@@ -238,7 +269,36 @@ export default {
   },
   methods: {
     goToDashboard() {
-      this.$router.push('/dashboard');
+      const token = localStorage.getItem('token');
+      const role = this.parseJwt(token)?.role;
+
+      switch (role) {
+        case 'ADMIN':
+          this.$router.push('/dashboard-admin');
+          break;
+        case 'COORDINATOR_FACULTY':
+          this.$router.push('/dashboard-coordinator-faculty');
+          break;
+        case 'COORDINATOR_SCHOOL':
+          this.$router.push('/dashboard-coordinator-school');
+          break;
+        case 'TEACHER':
+          this.$router.push('/dashboard-professor');
+          break;
+        case 'STUDENT':
+          this.$router.push('/dashboard-student');
+          break;
+        default:
+          this.$router.push('/');
+      }
+    },
+    parseJwt(token) {
+      if (!token) return {};
+      try {
+        return JSON.parse(atob(token.split('.')[1]));
+      } catch (e) {
+        return {};
+      }
     },
     openModal() {
       this.isModalOpen = true;
@@ -249,32 +309,39 @@ export default {
       this.isModalOpen = false;
     },
     editProfessor(index) {
-      this.currentProfessor = { ...this.professors[index] };
+      this.currentProfessor = JSON.parse(
+        JSON.stringify(this.professors[index])
+      );
       this.isEditing = true;
       this.isModalOpen = true;
     },
     async saveProfessor() {
       try {
+        if (!this.currentProfessor.schools.length) {
+          alert('Por favor, selecione ao menos uma escola.');
+          return;
+        }
+
         const payload = {
           name: this.currentProfessor.name,
+          cpf: this.currentProfessor.cpf,
+          email: this.currentProfessor.email,
           registration: this.currentProfessor.registration,
-          degree: this.currentProfessor.certification,
+          qualification: this.currentProfessor.qualification,
           discipline: this.currentProfessor.discipline,
-          schools: this.currentProfessor.schools,
+          schools: this.currentProfessor.schools.map((s) => ({ id: s.id })),
           orientedStudents: this.currentProfessor.orientedStudents,
-          // Adicione outros campos aqui se necessário
+          studentsInProgress: this.currentProfessor.studentsInProgress,
         };
 
         if (this.isEditing) {
-          // PUT para atualizar professor
-          await api.put(`/professors/${this.currentProfessor.id}`, payload);
+          await api.put(`/teachers/${this.currentProfessor.id}`, payload);
         } else {
-          // POST para criar novo professor
-          await api.post('/professors', payload);
+          await api.post('/teachers', payload);
         }
 
         this.closeModal();
-        this.fetchProfessors(); // Recarrega a lista do banco
+        await this.fetchProfessors();
       } catch (error) {
         console.error('Erro ao salvar professor:', error);
         alert(
@@ -285,37 +352,80 @@ export default {
     resetCurrentProfessor() {
       this.currentProfessor = {
         name: '',
+        cpf: '',
+        email: '',
         registration: '',
-        certification: '',
+        qualification: '',
         discipline: '',
         schools: [],
         orientedStudents: 0,
+        studentsInProgress: 0,
       };
-      this.selectedSchool = '';
+      this.selectedSchool = null;
     },
     async fetchProfessors() {
       try {
-        const response = await api.get('/professors');
+        const token = localStorage.getItem('token');
+        const role = this.parseJwt(token)?.role;
+        const params = {};
+
+        if (role === 'COORDINATOR_SCHOOL') {
+          if (this.$route.query.schoolId) {
+            params.schoolId = this.$route.query.schoolId;
+          }
+        }
+
+        if (role === 'COORDINATOR_FACULTY') {
+          if (this.$route.query.facultyId) {
+            params.facultyId = this.$route.query.facultyId;
+          }
+        }
+
+        const response = await api.get('/teachers', { params });
         this.professors = response.data;
       } catch (error) {
         console.error('Erro ao carregar professores:', error);
+        alert('Erro ao carregar dados dos professores.');
+      }
+    },
+    async fetchSchools() {
+      try {
+        const response = await api.get('/schools');
+        this.cearaPublicSchools = response.data;
+      } catch (error) {
+        console.error('Erro ao carregar escolas:', error);
       }
     },
     addSchool() {
       if (
         this.selectedSchool &&
-        !this.currentProfessor.schools.includes(this.selectedSchool)
+        !this.currentProfessor.schools.some(
+          (s) => s.id === this.selectedSchool.id
+        )
       ) {
         this.currentProfessor.schools.push(this.selectedSchool);
       }
-      this.selectedSchool = '';
+      this.selectedSchool = null;
     },
-    deleteProfessor(index) {
-      this.professors.splice(index, 1);
+    removeSchool(index) {
+      this.currentProfessor.schools.splice(index, 1);
+    },
+    async deleteProfessor(index) {
+      const professor = this.professors[index];
+      if (confirm(`Deseja realmente excluir ${professor.name}?`)) {
+        try {
+          await api.delete(`/teachers/${professor.id}`);
+          await this.fetchProfessors();
+        } catch (error) {
+          console.error('Erro ao excluir professor:', error);
+          alert('Erro ao excluir professor.');
+        }
+      }
     },
   },
   mounted() {
     this.fetchProfessors();
+    this.fetchSchools();
   },
 };
 </script>
@@ -372,6 +482,17 @@ export default {
   width: 250px;
   border: 1px solid #ccc;
   border-radius: 5px;
+}
+/* Alinhar os botões de ação ao centro da célula */
+.actions-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center; /* <- ESSENCIAL para alinhamento vertical */
+  height: 100%;
+}
+.professors-table td {
+  vertical-align: middle;
 }
 
 /* Tabela de Professores */

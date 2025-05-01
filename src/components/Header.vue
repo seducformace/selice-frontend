@@ -1,23 +1,25 @@
 <template>
   <header class="header">
-    <!-- Área da Logo e Título -->
     <div class="logo-container">
       <img
+        @click="goHome"
         :src="require('@/assets/seduc.png')"
         alt="Logo Governo do Ceará"
         class="logo"
+        style="cursor: pointer"
       />
       <div class="title">
         <h1>Sistema de Gerenciamento de Estágio Curricular</h1>
-        <h2></h2>
       </div>
     </div>
 
-    <!-- Área do Usuário à Direita -->
     <div class="user-menu" @click="toggleMenu">
       <div class="avatar">{{ userInitial }}</div>
       <div class="dropdown" v-if="menuOpen">
         <ul>
+          <li v-if="canViewStudents" @click="$router.push('/students')">
+            Estudantes
+          </li>
           <li @click="logout">Sair do sistema</li>
         </ul>
       </div>
@@ -26,6 +28,8 @@
 </template>
 
 <script>
+import jwt_decode from 'jwt-decode';
+
 export default {
   name: 'Header',
   data() {
@@ -38,6 +42,33 @@ export default {
       const email = localStorage.getItem('userEmail') || 'U';
       return email.charAt(0).toUpperCase();
     },
+    canViewStudents() {
+      const token = localStorage.getItem('token');
+      if (!token) return false;
+
+      try {
+        const decoded = jwt_decode(token);
+        let role = decoded.role;
+
+        if (!role && Array.isArray(decoded.authorities)) {
+          const firstAuth = decoded.authorities[0];
+          role =
+            typeof firstAuth === 'object' ? firstAuth.authority : firstAuth;
+        }
+
+        const normalizedRole = (role || '').toUpperCase();
+
+        // Define quem pode ver o menu de Estudantes:
+        return [
+          'ROLE_ADMIN',
+          'ROLE_COORDINATOR_FACULTY',
+          'ROLE_COORDINATOR_SCHOOL',
+          'ROLE_TEACHER',
+        ].includes(normalizedRole);
+      } catch (e) {
+        return false;
+      }
+    },
   },
   methods: {
     toggleMenu() {
@@ -48,6 +79,55 @@ export default {
       localStorage.removeItem('userEmail');
       this.$router.push('/login');
     },
+    goHome() {
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        console.warn('[goHome] Token ausente.');
+        return this.$router.push('/login');
+      }
+
+      try {
+        const decoded = jwt_decode(token);
+
+        let role = decoded.role;
+
+        if (!role && Array.isArray(decoded.authorities)) {
+          const firstAuth = decoded.authorities[0];
+          role =
+            typeof firstAuth === 'object' ? firstAuth.authority : firstAuth;
+        }
+
+        const normalizedRole = (role || '').toUpperCase();
+        let targetRoute = '/login';
+
+        switch (normalizedRole) {
+          case 'ROLE_ADMIN':
+            targetRoute = '/dashboard';
+            break;
+          case 'ROLE_COORDINATOR_FACULTY':
+            targetRoute = '/dashboard-coordinator-faculty';
+            break;
+          case 'ROLE_COORDINATOR_SCHOOL':
+            targetRoute = '/dashboard-coordinator-school';
+            break;
+          case 'ROLE_TEACHER':
+            targetRoute = '/dashboard-professor';
+            break;
+          case 'ROLE_STUDENT':
+            targetRoute = '/dashboard-student';
+            break;
+        }
+
+        if (this.$route.path !== targetRoute) {
+          console.log('[goHome] Redirecionando para:', targetRoute);
+          this.$router.push(targetRoute);
+        }
+      } catch (error) {
+        console.error('[goHome] Erro ao decodificar token:', error);
+        this.$router.push('/login');
+      }
+    },
   },
 };
 </script>
@@ -57,7 +137,7 @@ export default {
   background-color: #f5f5f5;
   padding: 20px 30px;
   display: flex;
-  justify-content: space-between; /* Agora divide logo e botão */
+  justify-content: space-between;
   align-items: center;
   position: relative;
 }
@@ -77,15 +157,9 @@ export default {
 
 .title h1 {
   font-size: 20px;
-  color: #333333;
+  color: #333;
   margin: 0;
   font-weight: bold;
-}
-
-.title h2 {
-  font-size: 16px;
-  color: #666666;
-  margin: 0;
 }
 
 .user-menu {

@@ -3,11 +3,11 @@
     <!-- Sidebar fixado na esquerda -->
     <Sidebar />
     <div class="main">
-      <!-- Cabeçalho posicionado na parte superior -->
-      <Header />
+      <!-- Cabeçalho foi removido: já está em App.vue -->
       <div class="dashboard-content">
         <!-- Título principal da página -->
         <h1>Bem-vindo, Administrador!</h1>
+
         <!-- Grid de cartões -->
         <section class="dashboard-cards">
           <div
@@ -23,7 +23,8 @@
               </div>
               <!-- Verso do cartão -->
               <div class="card-back">
-                <p>Total: {{ card.count }}</p>
+                <p v-if="card.count !== null">Total: {{ card.count }}</p>
+                <p v-else>Carregando...</p>
                 <button @click="navigateTo(card.route)" class="details-button">
                   Ver Detalhes
                 </button>
@@ -32,6 +33,7 @@
           </div>
         </section>
       </div>
+
       <!-- Rodapé fixado na parte inferior -->
       <Footer />
     </div>
@@ -40,14 +42,13 @@
 
 <script>
 import Sidebar from '@/components/Sidebar.vue';
-import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
+import { api } from '@/services/api';
 
 export default {
   name: 'Dashboard',
   components: {
     Sidebar,
-    Header,
     Footer,
   },
   data() {
@@ -56,47 +57,66 @@ export default {
         {
           title: 'Faculdades',
           icon: 'fas fa-university',
-          count: 36,
+          count: null,
           route: '/faculties',
+          endpoint: '/faculties',
         },
         {
           title: 'Coordenadores',
           icon: 'fas fa-chalkboard-teacher',
-          count: 84,
+          count: null,
           route: '/coordinators',
+          endpoint: '/coordinators',
         },
         {
           title: 'Alunos',
           icon: 'fas fa-user-graduate',
-          count: 60,
+          count: null,
           route: '/students',
+          endpoint: '/students',
         },
         {
           title: 'Professores',
           icon: 'fas fa-user-tie',
-          count: 86,
+          count: null,
           route: '/professors',
+          endpoint: '/teachers',
         },
         {
           title: 'Escolas',
           icon: 'fas fa-school',
-          count: 55,
+          count: null,
           route: '/schools',
+          endpoint: '/schools',
         },
         {
           title: 'Relatórios',
           icon: 'fas fa-chart-bar',
-          count: 64,
+          count: null,
           route: '/reports',
+          endpoint: '/reports',
         },
       ],
     };
   },
   methods: {
     navigateTo(route) {
-      // Navega para a rota especificada
       this.$router.push(route);
     },
+    async fetchCounts() {
+      for (const card of this.cards) {
+        try {
+          const response = await api.get(card.endpoint);
+          card.count = Array.isArray(response.data) ? response.data.length : 0;
+        } catch (error) {
+          console.error(`Erro ao buscar ${card.title}:`, error);
+          card.count = 0;
+        }
+      }
+    },
+  },
+  mounted() {
+    this.fetchCounts();
   },
 };
 </script>

@@ -1,9 +1,27 @@
 <template>
-  <div id="app"><router-view></router-view></div>
+  <div id="app">
+    <Header v-if="shouldShowHeader" :key="$route.fullPath" />
+    <router-view />
+  </div>
 </template>
+
 <script>
-export default { name: 'App' };
+import Header from '@/components/Header.vue';
+
+export default {
+  name: 'App',
+  components: {
+    Header,
+  },
+  computed: {
+    shouldShowHeader() {
+      const hiddenRoutes = ['/login'];
+      return !hiddenRoutes.includes(this.$route.path);
+    },
+  },
+};
 </script>
+
 <style>
-/* Adicione estilos globais aqui, se necessário */
+/* Estilos globais, se necessário */
 </style>

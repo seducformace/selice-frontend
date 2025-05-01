@@ -43,9 +43,10 @@
     </div>
   </div>
 </template>
-
 <script>
 import { authService } from '@/services/api';
+import jwt_decode from 'jwt-decode';
+import { getDashboardRouteByRole } from '@/utils/redirectByRole';
 
 export default {
   data() {
@@ -61,16 +62,48 @@ export default {
     togglePassword() {
       this.showPassword = !this.showPassword;
     },
+
     async login() {
       this.loading = true;
       this.errorMessage = '';
 
       try {
-        await authService.login(this.email, this.password);
+        console.log('[LOGIN] Iniciando login...');
+
+        const response = await authService.login(this.email, this.password);
+        console.log('[LOGIN] Resposta recebida:', response);
+
+        const token = response.token;
+        if (!token) throw new Error('Token não recebido');
+
+        localStorage.setItem('token', token);
         localStorage.setItem('userEmail', this.email);
-        this.$router.push('/dashboard');
+
+        const decoded = jwt_decode(token);
+        console.log('[LOGIN] Token decodificado:', decoded);
+
+        // 🎯 Aqui garantimos que funcione tanto com `role` direto quanto com `authorities`
+        let role = decoded.role;
+        if (!role && Array.isArray(decoded.authorities)) {
+          const first = decoded.authorities[0];
+          role = typeof first === 'string' ? first : first.authority;
+        }
+
+        console.log('[LOGIN] Role final:', role);
+
+        if (!role) throw new Error('Papel não encontrado no token.');
+
+        const route = getDashboardRouteByRole(role);
+        console.log('[LOGIN] Redirecionando para:', route);
+
+        // Redireciona de forma segura
+        this.$router.push(route);
       } catch (error) {
-        this.errorMessage = error.message || 'Erro ao realizar login.';
+        console.error('[LOGIN] Erro geral:', error);
+        this.errorMessage =
+          error?.response?.data?.message ||
+          error.message ||
+          'Erro ao realizar login.';
       } finally {
         this.loading = false;
       }

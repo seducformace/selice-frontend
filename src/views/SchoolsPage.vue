@@ -1,8 +1,5 @@
 <template>
   <div class="schools-page">
-    <!-- Cabeçalho (Header) -->
-    <Header />
-
     <div class="content-wrapper">
       <div class="content">
         <!-- Barra Superior: Botão Home + Título -->
@@ -46,10 +43,14 @@
               </thead>
               <tbody>
                 <tr v-for="(school, index) in filteredSchools" :key="index">
-                  <td>{{ school.name }}</td>
-                  <td>{{ school.inepCode || '—' }}</td>
+                  <td :title="school.name" class="expandable-cell">
+                    {{ school.name }}
+                  </td>
+                  <td :title="school.inepCode">{{ school.inepCode || '—' }}</td>
                   <td>{{ school.city }}</td>
-                  <td>{{ school.address || '—' }}</td>
+                  <td :title="school.address" class="expandable-cell">
+                    {{ school.address || '—' }}
+                  </td>
                   <td>{{ school.type }}</td>
                   <td>
                     <span
@@ -61,8 +62,12 @@
                       {{ school.status }}
                     </span>
                   </td>
-                  <td>{{ school.phone }}</td>
-                  <td>{{ school.email }}</td>
+                  <td :title="school.phone" class="expandable-cell">
+                    {{ school.phone }}
+                  </td>
+                  <td :title="school.email" class="expandable-cell">
+                    {{ school.email }}
+                  </td>
                   <td>
                     <span v-if="school.colleges?.length">
                       {{ school.colleges.map((c) => c.name).join(', ') }}
@@ -88,7 +93,6 @@
       <div v-if="isModalOpen" class="modal-overlay">
         <div class="modal modal-centered">
           <h2>{{ isEditing ? 'Editar Escola' : 'Adicionar Escola' }}</h2>
-
           <form @submit.prevent="saveSchool">
             <div class="form-group">
               <label for="nome">Nome da Escola</label>
@@ -118,7 +122,7 @@
               <input
                 id="inep"
                 type="text"
-                v-model="currentSchool.inep"
+                v-model="currentSchool.inepCode"
                 class="form-control"
                 placeholder="Digite o código INEP..."
                 required
@@ -155,7 +159,6 @@
               />
             </div>
 
-            <!-- Campo fixo para estado (CE) -->
             <input type="hidden" v-model="currentSchool.state" />
 
             <div class="form-group">
@@ -270,15 +273,13 @@
     <Footer class="footer-fixed" />
   </div>
 </template>
-
 <script>
-import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
 import { api } from '@/services/api';
 
 export default {
   name: 'SchoolsPage',
-  components: { Header, Footer },
+  components: { Footer },
   data() {
     return {
       searchQuery: '',
@@ -292,6 +293,7 @@ export default {
         name: '',
         inepCode: '',
         city: '',
+        state: 'CE',
         type: 'Pública',
         status: 'Ativa',
         address: '',
@@ -316,10 +318,11 @@ export default {
   },
   computed: {
     filteredSchools() {
-      return this.schools.filter((school) =>
-        (school.name ?? '')
-          .toLowerCase()
-          .includes(this.searchQuery.toLowerCase())
+      const query = this.searchQuery.toLowerCase();
+      return this.schools.filter(
+        (school) =>
+          (school.name ?? '').toLowerCase().includes(query) ||
+          (school.inepCode ?? '').toLowerCase().includes(query)
       );
     },
   },
@@ -336,6 +339,7 @@ export default {
         name: '',
         inepCode: '',
         city: '',
+        state: 'CE',
         type: 'Pública',
         status: 'Ativa',
         address: '',
@@ -352,6 +356,7 @@ export default {
         const response = await api.get('/schools');
         this.schools = response.data.map((school) => ({
           ...school,
+          inepCode: school.inepCode ?? '—',
           address: school.address ?? '',
           phone: school.phone ?? '',
           email: school.email ?? '',
@@ -363,7 +368,6 @@ export default {
         console.error('Erro ao carregar escolas:', error);
       }
     },
-
     async fetchFaculties() {
       try {
         const response = await api.get('/faculties');
@@ -380,6 +384,7 @@ export default {
         name: selected.name,
         inepCode: selected.inepCode,
         city: selected.city,
+        state: selected.state,
         type: selected.type,
         status: selected.status,
         address: selected.address,
@@ -395,6 +400,7 @@ export default {
         name: this.currentSchool.name,
         inepCode: this.currentSchool.inepCode,
         city: this.currentSchool.city,
+        state: this.currentSchool.state,
         type: this.currentSchool.type,
         status: this.currentSchool.status,
         address: this.currentSchool.address,
@@ -588,7 +594,7 @@ export default {
   width: 12%;
 }
 .col-actions {
-  width: 12%;
+  width: 15%;
 }
 
 /* Células: truncamos texto para não estufar a linha */
@@ -742,16 +748,42 @@ export default {
   font-size: 0.9rem;
   text-align: center;
 }
-
+.expandable-cell {
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
 .message-success {
   background-color: #d4edda;
   color: #155724;
   border: 1px solid #c3e6cb;
 }
-
+.expandable-cell {
+  max-width: 180px;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  cursor: help;
+}
 .message-error {
   background-color: #f8d7da;
   color: #721c24;
   border: 1px solid #f5c6cb;
+}
+.form-control {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #fff;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  transition: border-color 0.3s;
+}
+
+.form-control:focus {
+  border-color: #007bff; /* azul leve no foco */
+  outline: none;
 }
 </style>
