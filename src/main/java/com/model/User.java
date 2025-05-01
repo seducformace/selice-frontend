@@ -1,6 +1,9 @@
 package com.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * Entidade que representa os usuários do sistema SELICE.
@@ -10,35 +13,34 @@ import jakarta.persistence.*;
 @Table(name = "users")
 public class User {
 
-    // Identificador único do usuário
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Nome do usuário (obrigatório)
+    @NotBlank(message = "O nome é obrigatório.")
     @Column(name = "name", nullable = false)
     private String name;
 
-    // E-mail do usuário (único e obrigatório, utilizado como login)
+    @Email(message = "O e-mail deve ser válido.")
+    @NotBlank(message = "O e-mail é obrigatório.")
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    // Senha criptografada com BCrypt
+    @NotBlank(message = "A senha é obrigatória.")
+    @JsonIgnore // Garante que a senha não vaze no JSON de resposta
     @Column(name = "password", nullable = false)
     private String password;
 
     /**
-     * Papel (role) do usuário no sistema.
-     * Deve seguir o padrão usado no Spring Security: ex: ADMIN, COORDINATOR
-     * Será prefixado com "ROLE_" na autenticação.
+     * Papel do usuário (como ADMIN, COORDINATOR_FACULTY, etc).
+     * Não incluir o prefixo ROLE_ aqui — ele será adicionado durante a autenticação.
      */
+    @NotBlank(message = "A role é obrigatória.")
     @Column(name = "role", nullable = false)
     private String role;
 
-    // Construtor padrão exigido pelo JPA
     public User() {}
 
-    // Construtor completo
     public User(String name, String email, String password, String role) {
         this.name = name;
         this.email = email;
@@ -47,44 +49,43 @@ public class User {
     }
 
     // Getters e Setters
-
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public void setId(Long id) { this.id = id; }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public void setName(String name) { this.name = name; }
 
     public String getEmail() {
         return email;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    public void setEmail(String email) { this.email = email; }
 
     public String getPassword() {
         return password;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
+    public void setPassword(String password) { this.password = password; }
 
     public String getRole() {
         return role;
     }
 
-    public void setRole(String role) {
-        this.role = role;
+    public void setRole(String role) { this.role = role; }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", email='" + email + '\'' +
+                ", role='" + role + '\'' +
+                '}';
     }
 }

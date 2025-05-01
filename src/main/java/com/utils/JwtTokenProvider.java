@@ -22,8 +22,7 @@ public class JwtTokenProvider {
 
     private final Key secretKey;
 
-    // Tempo de expiração do token (em milissegundos)
-    @Value("${jwt.expiration:86400000}")
+    @Value("${jwt.expiration:86400000}") // 1 dia padrão
     private long expirationTime;
 
     public JwtTokenProvider(@Value("${jwt.secret}") String secret) {
@@ -38,17 +37,22 @@ public class JwtTokenProvider {
         return null;
     }
 
+    /**
+     * Gera um token JWT com e-mail e role explícita.
+     * A claim "role" será usada no frontend para redirecionamento.
+     */
     public String generateToken(String email, String role) {
         Date now = new Date();
 
-        // ⚠️ Durante o desenvolvimento, desativamos a expiração do token
-        Date expiryDate = new Date(Long.MAX_VALUE);
+        // ⚠️ Durante o desenvolvimento, você pode deixar o token "eterno"
+        // Date expiryDate = new Date(now.getTime() + expirationTime);
+        Date expiryDate = new Date(Long.MAX_VALUE); // Apenas para DEV
 
         return Jwts.builder()
                 .setSubject(email)
-                .claim("role", role)
+                .claim("role", role) // ESSENCIAL: claim "role" visível no frontend
                 .setIssuedAt(now)
-                .setExpiration(expiryDate) // <- Token "eterno" até o fim do desenvolvimento
+                .setExpiration(expiryDate)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }

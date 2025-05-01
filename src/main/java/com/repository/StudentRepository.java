@@ -11,41 +11,71 @@ import java.util.Optional;
 @Repository
 public interface StudentRepository extends JpaRepository<Student, Long> {
 
-    // Buscar estudantes com horas pendentes abaixo de um limite
     List<Student> findByHoursPendingLessThanEqual(int hours);
 
-    // Buscar estudante por e-mail (útil para autenticação ou verificação)
     Optional<Student> findByEmail(String email);
 
-    // Verifica duplicidade de CPF
     boolean existsByCpf(String cpf);
 
-    // Verifica duplicidade de e-mail
     boolean existsByEmail(String email);
 
-    // Contagem por status do estágio (Enum)
     @Query("SELECT s.status, COUNT(s) FROM Student s GROUP BY s.status")
     List<Object[]> countByStatus();
 
-    // Contagem por curso
-    @Query("SELECT s.course, COUNT(s) FROM Student s GROUP BY s.course")
-    List<Object[]> countByCourse();
+    @Query("SELECT s.course.name, COUNT(s) FROM Student s GROUP BY s.course.name")
+    List<Object[]> countByCourse(); // 🔄 Agora usa o nome da entidade Course
 
-    // Contagem por nome do professor orientador
     @Query("SELECT s.teacher.name, COUNT(s) FROM Student s GROUP BY s.teacher.name")
     List<Object[]> countByAdvisor();
 
-    /**
-     * Retorna estudantes com JOIN FETCH nas entidades relacionadas.
-     * Ideal para evitar LazyInitializationException ao acessar college, school e teacher.
-     *
-     * IMPORTANTE: Evite N+1 e garanta que os relacionamentos estejam presentes ou controlados com `@JsonIgnoreProperties`
-     */
     @Query("""
-        SELECT s FROM Student s
-        LEFT JOIN FETCH s.college
-        LEFT JOIN FETCH s.school
-        LEFT JOIN FETCH s.teacher
+        SELECT DISTINCT s FROM Student s
+        LEFT JOIN FETCH s.college c
+        LEFT JOIN FETCH s.school sc
+        LEFT JOIN FETCH s.teacher t
+        LEFT JOIN FETCH s.course cs
     """)
-    List<Student> findAllWithRelations();
+    List<Student> findAllWithRelations(); // 🔄 Adicionado JOIN com course
+
+    @Query("""
+        SELECT DISTINCT s FROM Student s
+        LEFT JOIN FETCH s.college c
+        LEFT JOIN FETCH s.school sc
+        LEFT JOIN FETCH s.teacher t
+        LEFT JOIN FETCH s.course cs
+        WHERE s.college.id = :collegeId
+    """)
+    List<Student> findByCollegeIdWithRelations(Long collegeId);
+
+    @Query("""
+        SELECT DISTINCT s FROM Student s
+        LEFT JOIN FETCH s.college c
+        LEFT JOIN FETCH s.school sc
+        LEFT JOIN FETCH s.teacher t
+        LEFT JOIN FETCH s.course cs
+        WHERE s.school.id = :schoolId
+    """)
+    List<Student> findBySchoolIdWithRelations(Long schoolId);
+
+    @Query("""
+        SELECT DISTINCT s FROM Student s
+        LEFT JOIN FETCH s.college c
+        LEFT JOIN FETCH s.school sc
+        LEFT JOIN FETCH s.teacher t
+        LEFT JOIN FETCH s.course cs
+        WHERE s.college.id IN (
+            SELECT c.faculty.id FROM Coordinator c WHERE UPPER(c.email) = UPPER(:email)
+        )
+    """)
+    List<Student> findByCoordinatorFacultyEmail(String email);
+
+    @Query("""
+        SELECT DISTINCT s FROM Student s
+        LEFT JOIN FETCH s.college c
+        LEFT JOIN FETCH s.school sc
+        LEFT JOIN FETCH s.teacher t
+        LEFT JOIN FETCH s.course cs
+        WHERE UPPER(s.teacher.email) = UPPER(:email)
+    """)
+    List<Student> findByTeacherEmailWithRelations(String email);
 }

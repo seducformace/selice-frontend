@@ -3,17 +3,16 @@ package com.controller;
 import com.model.Coordinator;
 import com.service.CoordinatorService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
-/**
- * Controller responsável pelos endpoints de coordenadores.
- */
 @RestController
 @RequestMapping("/api/coordinators")
+@Validated
 @CrossOrigin(origins = "http://localhost:8081", allowCredentials = "true")
 public class CoordinatorController {
 
@@ -21,65 +20,81 @@ public class CoordinatorController {
     private CoordinatorService coordinatorService;
 
     /**
-     * Cria um novo coordenador.
-     */
-    @PostMapping
-    public ResponseEntity<Object> createCoordinator(@RequestBody Coordinator coordinator) {
-        try {
-            Coordinator newCoordinator = coordinatorService.createCoordinator(coordinator);
-            return ResponseEntity.status(201).body(newCoordinator);
-        } catch (IllegalArgumentException | DataIntegrityViolationException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao criar coordenador.");
-        }
-    }
-
-    /**
-     * Lista todos os coordenadores cadastrados.
+     * Lista todos os coordenadores.
      */
     @GetMapping
     public ResponseEntity<List<Coordinator>> getAllCoordinators() {
-        return ResponseEntity.ok(coordinatorService.getAllCoordinators());
+        List<Coordinator> list = coordinatorService.getAllCoordinators();
+        return ResponseEntity.ok(list);
     }
 
     /**
      * Retorna um coordenador pelo ID.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Object> getCoordinatorById(@PathVariable Long id) {
+    public ResponseEntity<Coordinator> getCoordinatorById(@PathVariable Long id) {
         return coordinatorService.getCoordinatorById(id)
-                .<ResponseEntity<Object>>map(ResponseEntity::ok)
-                .orElse(ResponseEntity.status(404).body("Coordenador não encontrado com ID: " + id));
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Cria um novo coordenador.
+     */
+    @PostMapping
+    public ResponseEntity<?> createCoordinator(@RequestBody Coordinator coordinator) {
+        try {
+            Coordinator created = coordinatorService.createCoordinator(coordinator);
+            return ResponseEntity.status(201).body(created);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro ao criar o coordenador.");
+        }
     }
 
     /**
      * Atualiza um coordenador existente.
      */
     @PutMapping("/{id}")
-    public ResponseEntity<Object> updateCoordinator(@PathVariable Long id, @RequestBody Coordinator coordinator) {
+    public ResponseEntity<?> updateCoordinator(@PathVariable Long id, @RequestBody Coordinator coordinator) {
         try {
-            Coordinator updatedCoordinator = coordinatorService.updateCoordinator(id, coordinator);
-            return ResponseEntity.ok(updatedCoordinator);
-        } catch (IllegalArgumentException | DataIntegrityViolationException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            Coordinator updated = coordinatorService.updateCoordinator(id, coordinator);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao atualizar coordenador.");
+            return ResponseEntity.internalServerError().body("Erro ao atualizar o coordenador.");
         }
     }
 
     /**
-     * Exclui um coordenador pelo ID.
+     * Deleta um coordenador pelo ID.
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Object> deleteCoordinator(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCoordinator(@PathVariable Long id) {
         try {
             coordinatorService.deleteCoordinator(id);
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao excluir coordenador.");
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Retorna o coordenador atualmente autenticado (com base no JWT).
+     */
+    @GetMapping("/me")
+    public ResponseEntity<?> getAuthenticatedCoordinator() {
+        try {
+            Coordinator coordinator = coordinatorService.getAuthenticatedCoordinator();
+            return ResponseEntity.ok(coordinator);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body("Coordenador autenticado não encontrado.");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro ao buscar o coordenador autenticado.");
         }
     }
 }

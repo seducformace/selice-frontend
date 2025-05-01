@@ -10,6 +10,8 @@ import com.repository.SchoolRepository;
 import com.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -80,14 +82,23 @@ public class CoordinatorService {
         return coordinatorRepository.save(existing);
     }
 
+    /**
+     * Retorna todos os coordenadores cadastrados.
+     */
     public List<Coordinator> getAllCoordinators() {
         return coordinatorRepository.findAll();
     }
 
+    /**
+     * Retorna um coordenador pelo ID.
+     */
     public Optional<Coordinator> getCoordinatorById(Long id) {
         return coordinatorRepository.findById(id);
     }
 
+    /**
+     * Exclui um coordenador pelo ID.
+     */
     public void deleteCoordinator(Long id) {
         if (!coordinatorRepository.existsById(id)) {
             throw new IllegalArgumentException("Coordenador não encontrado com ID: " + id);
@@ -95,6 +106,31 @@ public class CoordinatorService {
         coordinatorRepository.deleteById(id);
     }
 
+    /**
+     * Retorna o coordenador atualmente autenticado (baseado no e-mail do token JWT).
+     */
+    public Coordinator getAuthenticatedCoordinator() {
+        String email = getAuthenticatedEmail();
+
+        return coordinatorRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new RuntimeException("Coordenador não encontrado para o e-mail: " + email));
+    }
+
+    /**
+     * Pega o e-mail do usuário autenticado via SecurityContext.
+     */
+    private String getAuthenticatedEmail() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetails userDetails) {
+            return userDetails.getUsername();
+        } else {
+            return principal.toString();
+        }
+    }
+
+    /**
+     * Valida as regras de vínculo do coordenador com faculdade ou escola.
+     */
     private void validarDados(Coordinator coordinator) {
         if (coordinator.getFaculty() != null && coordinator.getSchool() != null) {
             throw new IllegalArgumentException("O coordenador não pode estar vinculado a uma faculdade e uma escola ao mesmo tempo.");

@@ -24,20 +24,23 @@ public class Student {
     @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(name = "course", nullable = false, length = 100)
-    private String course;
+    // ✅ Curso agora referenciando a entidade Course corretamente
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "course", referencedColumnName = "id")
+    @JsonIgnoreProperties({"students", "faculty", "coordinator", "hibernateLazyInitializer", "handler"})
+    private Course course;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "faculty_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "college_id")
     @JsonIgnoreProperties({"students", "coordinators", "hibernateLazyInitializer", "handler"})
     private Faculty college;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "school_id")
     @JsonIgnoreProperties({"students", "teachers", "coordinators", "hibernateLazyInitializer", "handler"})
     private School school;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "teacher_id")
     @JsonIgnoreProperties({"students", "schools", "hibernateLazyInitializer", "handler"})
     private Teacher teacher;
@@ -80,6 +83,7 @@ public class Student {
     }
 
     // Getters e Setters
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -92,8 +96,8 @@ public class Student {
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
-    public String getCourse() { return course; }
-    public void setCourse(String course) { this.course = course; }
+    public Course getCourse() { return course; }
+    public void setCourse(Course course) { this.course = course; }
 
     public Faculty getCollege() { return college; }
     public void setCollege(Faculty college) { this.college = college; }

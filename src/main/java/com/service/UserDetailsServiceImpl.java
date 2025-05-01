@@ -49,7 +49,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
                 .password(user.getPassword())
-                .roles(user.getRole().toUpperCase()) // <- Garante compatibilidade com Spring Security
+                .authorities(user.getRole().toUpperCase()) // Corrigido!
                 .build();
+
     }
 }

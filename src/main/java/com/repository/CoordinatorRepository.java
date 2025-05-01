@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CoordinatorRepository extends JpaRepository<Coordinator, Long> {
@@ -16,6 +17,9 @@ public interface CoordinatorRepository extends JpaRepository<Coordinator, Long> 
 
     // Verifica se já existe coordenador com o CPF informado
     boolean existsByCpf(String cpf);
+
+    // Buscar coordenador pelo e-mail, ignorando letras maiúsculas/minúsculas
+    Optional<Coordinator> findByEmailIgnoreCase(String email);
 
     // Coordenadores agrupados por curso
     @Query("SELECT c.department AS course, COUNT(c) AS total FROM Coordinator c GROUP BY c.department")

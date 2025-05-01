@@ -6,6 +6,9 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Entidade que representa um Coordenador.
+ */
 @Entity
 @Table(name = "coordinators")
 public class Coordinator {

@@ -7,10 +7,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Controlador REST para operações com estudantes.
+ */
 @RestController
 @RequestMapping("/api/students")
 @Validated
@@ -21,21 +26,60 @@ public class StudentController {
     private StudentService studentService;
 
     /**
-     * Lista todos os estudantes como DTOs com dados relacionados (faculdade, escola, professor).
+     * Lista estudantes conforme a role do usuário autenticado:
+     *
+     * - ADMIN: vê todos, ou filtra por faculdade ou escola
+     * - COORDINATOR_FACULTY: vê apenas os alunos de sua faculdade
+     * - COORDINATOR_SCHOOL: vê apenas os alunos vinculados à sua escola
+     * - TEACHER: (⚠️ ainda não implementado aqui, mas previsto)
+     * - STUDENT: não acessa essa rota
      */
     @GetMapping
-    public ResponseEntity<List<StudentDTO>> getAllStudents() {
+    public ResponseEntity<List<StudentDTO>> getAllStudents(
+            @RequestParam(required = false) Long collegeId,
+            @RequestParam(required = false) Long schoolId,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
         try {
-            List<StudentDTO> list = studentService.getAllStudentsAsDTO();
-            return ResponseEntity.ok(list);
+            List<StudentDTO> students;
+
+            // Pega a role do usuário logado
+            String role = userDetails.getAuthorities().iterator().next().getAuthority();
+            String email = userDetails.getUsername();
+
+            // ADMIN pode ver tudo, com ou sem filtro por parâmetro
+            if ("ROLE_ADMIN".equals(role)) {
+                if (collegeId != null) {
+                    students = studentService.getStudentsByCollegeIdAsDTO(collegeId);
+                } else if (schoolId != null) {
+                    students = studentService.getStudentsBySchoolIdAsDTO(schoolId);
+                } else {
+                    students = studentService.getAllStudentsAsDTO();
+                }
+
+                // COORDENADOR DE FACULDADE vê apenas os estudantes vinculados à sua instituição
+            } else if ("ROLE_COORDINATOR_FACULTY".equals(role)) {
+                students = studentService.getStudentsByCoordinatorFaculty(email);
+
+                // COORDENADOR DE ESCOLA vê apenas os estudantes alocados em sua escola
+            } else if ("ROLE_COORDINATOR_SCHOOL".equals(role)) {
+                students = studentService.getStudentsByCoordinatorSchool(email);
+
+                // TEACHER (⚠️ Implementar no service caso necessário)
+            } else if ("ROLE_TEACHER".equals(role)) {
+                students = studentService.getStudentsByTeacher(email);
+
+                // Outras roles não têm acesso
+            } else {
+                students = Collections.emptyList();
+            }
+
+            return ResponseEntity.ok(students);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
     }
 
-    /**
-     * Retorna um estudante pelo ID.
-     */
     @GetMapping("/{id}")
     public ResponseEntity<Student> getStudentById(@PathVariable Long id) {
         return studentService.getStudentById(id)
@@ -43,9 +87,6 @@ public class StudentController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * Lista estudantes com horas pendentes menores ou iguais ao valor informado.
-     */
     @GetMapping("/hours")
     public ResponseEntity<List<Student>> getStudentsByHours(@RequestParam int maxHours) {
         try {
@@ -58,9 +99,6 @@ public class StudentController {
         }
     }
 
-    /**
-     * Cria um novo estudante.
-     */
     @PostMapping
     public ResponseEntity<Student> createStudent(@RequestBody Student student) {
         try {
@@ -71,9 +109,6 @@ public class StudentController {
         }
     }
 
-    /**
-     * Atualiza os dados de um estudante existente.
-     */
     @PutMapping("/{id}")
     public ResponseEntity<Student> updateStudent(@PathVariable Long id, @RequestBody Student student) {
         try {
@@ -86,9 +121,6 @@ public class StudentController {
         }
     }
 
-    /**
-     * Remove um estudante existente pelo ID.
-     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteStudent(@PathVariable Long id) {
         try {
@@ -98,6 +130,21 @@ public class StudentController {
             return ResponseEntity.notFound().build();
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Retorna os dados do estudante autenticado com base no token JWT.
+     */
+    @GetMapping("/me")
+    public ResponseEntity<?> getAuthenticatedStudent() {
+        try {
+            Student student = studentService.getAuthenticatedStudent();
+            return ResponseEntity.ok(student);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body("Estudante autenticado não encontrado.");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro ao buscar o estudante autenticado.");
         }
     }
 }

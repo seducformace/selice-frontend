@@ -1,13 +1,14 @@
 package com.controller;
 
+import com.dto.ReportsDTO;
+import com.model.Course;
 import com.model.Faculty;
+import com.repository.CourseRepository;
 import com.service.FacultyService;
 import com.service.ReportsService;
-import com.dto.ReportsDTO;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +27,9 @@ public class FacultyController {
 
     @Autowired
     private ReportsService reportsService;
+
+    @Autowired
+    private CourseRepository courseRepository;
 
     /**
      * Cadastra uma nova faculdade no sistema.
@@ -110,5 +114,20 @@ public class FacultyController {
     @GetMapping("/test")
     public ResponseEntity<String> test() {
         return ResponseEntity.ok("FacultyController is up and running!");
+    }
+
+    /**
+     * Retorna os cursos vinculados a uma faculdade específica.
+     * Endpoint: GET /api/faculties/{id}/courses
+     */
+    @GetMapping("/{id}/courses")
+    public ResponseEntity<List<Course>> getCoursesByFaculty(@PathVariable Long id) {
+        Optional<Faculty> facultyOpt = facultyService.getFacultyById(id);
+        if (facultyOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        List<Course> courses = courseRepository.findByFacultyId(id);
+        return ResponseEntity.ok(courses);
     }
 }

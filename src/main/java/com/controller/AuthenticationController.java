@@ -48,14 +48,14 @@ public class AuthenticationController {
     }
 
     /**
-     * Realiza a autenticação de um usuário e retorna um token JWT.
+     * Realiza a autenticação de um usuário e retorna um token JWT com a role correta.
      */
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> authenticateUser(@RequestBody LoginRequest loginRequest) {
-        logger.info("🔐 Tentativa de login: {}", loginRequest.getEmail());
+        logger.info("Tentativa de login: {}", loginRequest.getEmail());
 
         try {
-            // Autentica o usuário com Spring Security
+            // 1. Autenticação com as credenciais fornecidas
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getEmail(),
@@ -63,30 +63,31 @@ public class AuthenticationController {
                     )
             );
 
-            // Define o contexto de segurança
+            // 2. Define o usuário autenticado no contexto de segurança
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // Carrega o usuário completo
+            // 3. Carrega os detalhes do usuário
             UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getEmail());
 
-            // Recupera a role real no banco
+            // 4. Recupera o usuário do banco para obter o papel real armazenado
             Optional<User> userOptional = userRepository.findByEmailIgnoreCase(loginRequest.getEmail());
             if (userOptional.isEmpty()) {
-                logger.warn("❌ Usuário não encontrado no banco.");
+                logger.warn("Usuário não encontrado no banco.");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(new LoginResponse("Usuário não encontrado.", null));
             }
 
+            // 5. Constrói o papel real no formato "ROLE_XYZ"
             String role = "ROLE_" + userOptional.get().getRole().toUpperCase();
 
-            // Geração do token JWT
+            // 6. Gera o token JWT com o papel correto
             String token = jwtTokenProvider.generateToken(userDetails.getUsername(), role);
 
-            logger.info("✅ Login realizado com sucesso para: {}", userDetails.getUsername());
+            logger.info("Login realizado com sucesso para: {} com papel: {}", userDetails.getUsername(), role);
             return ResponseEntity.ok(new LoginResponse("Login realizado com sucesso!", token));
 
         } catch (Exception e) {
-            logger.error("❌ Erro ao autenticar: {}", loginRequest.getEmail(), e);
+            logger.error("Erro ao autenticar: {}", loginRequest.getEmail(), e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new LoginResponse("E-mail ou senha inválidos.", null));
         }
