@@ -1,6 +1,7 @@
 // src/services/api.js
 
 import axios from 'axios';
+import jwt_decode from 'jwt-decode';
 
 const API_URL = 'http://localhost:8080/api/authentication';
 
@@ -22,15 +23,29 @@ export const authService = {
         throw new Error('Token não recebido do backend.');
       }
 
-      // Salva o token localmente para sessões futuras
+      // Decodifica o token para extrair a role
+      let role = null;
+      try {
+        const decoded = jwt_decode(token);
+        role =
+          decoded.role ||
+          (decoded.authorities && decoded.authorities[0]?.authority);
+      } catch (decodeErr) {
+        console.warn(
+          '[authService] Não foi possível decodificar o token:',
+          decodeErr
+        );
+      }
+
+      // Salva o token, email e role localmente
       localStorage.setItem('token', token);
       localStorage.setItem('userEmail', email);
+      if (role) localStorage.setItem('role', role.toUpperCase());
 
       return { token };
     } catch (error) {
       console.error('[authService] Erro ao fazer login:', error);
 
-      // Mensagem mais clara com fallback
       throw new Error(
         error?.response?.data?.message ||
           error.message ||
@@ -45,6 +60,7 @@ export const authService = {
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('role');
   },
 
   /**

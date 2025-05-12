@@ -1,7 +1,7 @@
 <template>
   <div class="coordinator-dashboard">
     <div class="content-wrapper">
-      <!-- Cabeçalho com título centralizado e botão à esquerda -->
+      <!-- Cabeçalho -->
       <div class="header-bar">
         <button class="home-button" @click="goToHome">
           <i class="fas fa-home"></i>
@@ -9,11 +9,24 @@
         <h1 class="dashboard-title">Painel do Coordenador</h1>
       </div>
 
-      <!-- Dados do coordenador -->
-      <div class="coordinator-info" v-if="coordinator">
+      <!-- Dados do Coordenador com estilo melhorado -->
+      <div
+        v-if="coordinator"
+        style="
+          background-color: #f2f9ff;
+          padding: 15px;
+          border-radius: 8px;
+          margin: 20px;
+          line-height: 1.8;
+        "
+      >
         <p><strong>Nome:</strong> {{ coordinator.name }}</p>
         <p><strong>CPF:</strong> {{ coordinator.cpf }}</p>
         <p><strong>Email:</strong> {{ coordinator.email }}</p>
+        <p><strong>Telefone:</strong> {{ coordinator.phoneNumber || '—' }}</p>
+        <p>
+          <strong>Departamento:</strong> {{ coordinator.department || '—' }}
+        </p>
         <p><strong>Instituição:</strong> {{ institutionName }}</p>
       </div>
 
@@ -61,9 +74,9 @@ export default {
     institutionName() {
       if (!this.coordinator) return '';
       if (this.coordinator.faculty) {
-        return this.coordinator.faculty.name;
+        return `Faculdade - ${this.coordinator.faculty.name}`;
       } else if (this.coordinator.school) {
-        return this.coordinator.school.name;
+        return `Escola - ${this.coordinator.school.name}`;
       } else {
         return 'Instituição não vinculada';
       }
@@ -77,9 +90,9 @@ export default {
       this.$router.push('/dashboard-coordinator');
     },
     goToStudents() {
-      if (this.coordinator && this.coordinator.faculty) {
+      if (this.coordinator?.faculty) {
         this.$router.push('/students');
-      } else if (this.coordinator && this.coordinator.school) {
+      } else if (this.coordinator?.school) {
         this.$router.push({
           path: '/students',
           query: { schoolId: this.coordinator.school.id },
@@ -89,7 +102,7 @@ export default {
       }
     },
     goToProfessors() {
-      if (this.coordinator && this.coordinator.school) {
+      if (this.coordinator?.school) {
         this.$router.push({
           path: '/professors',
           query: { schoolId: this.coordinator.school.id },
@@ -99,10 +112,7 @@ export default {
       }
     },
     goToReports() {
-      if (
-        this.coordinator &&
-        (this.coordinator.school || this.coordinator.faculty)
-      ) {
+      if (this.coordinator?.school || this.coordinator?.faculty) {
         this.$router.push('/coordinator/reports');
       } else {
         alert('Nenhuma instituição vinculada.');

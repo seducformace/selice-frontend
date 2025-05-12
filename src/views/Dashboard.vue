@@ -55,7 +55,7 @@ export default {
     return {
       cards: [
         {
-          title: 'Faculdades',
+          title: 'IES',
           icon: 'fas fa-university',
           count: null,
           route: '/faculties',

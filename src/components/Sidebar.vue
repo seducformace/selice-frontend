@@ -6,7 +6,7 @@
         :key="index"
         class="menu-item"
       >
-        <router-link :to="item.route" class="menu-link">
+        <router-link :to="resolveRoute(item)" class="menu-link">
           <i :class="item.icon" class="menu-icon"></i>
           <span class="menu-text">{{ item.label }}</span>
         </router-link>
@@ -26,8 +26,13 @@ export default {
         {
           label: 'Dashboard',
           icon: 'fas fa-home',
-          route: '/dashboard',
-          roles: ['ROLE_ADMIN'],
+          roles: [
+            'ROLE_ADMIN',
+            'ROLE_COORDINATOR_FACULTY',
+            'ROLE_COORDINATOR_SCHOOL',
+            'ROLE_TEACHER',
+            'ROLE_STUDENT',
+          ],
         },
         {
           label: 'Faculdades',
@@ -78,13 +83,19 @@ export default {
   },
   computed: {
     userRole() {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return null;
         const decoded = jwt_decode(token);
-        const role =
-          decoded.role ||
-          (decoded.authorities && decoded.authorities[0]?.authority);
+        let role = decoded.role;
+
+        if (!role && Array.isArray(decoded.authorities)) {
+          const firstAuth = decoded.authorities[0];
+          role =
+            typeof firstAuth === 'object' ? firstAuth.authority : firstAuth;
+        }
+
         return role ? role.toUpperCase() : null;
       } catch (e) {
         console.error('[Sidebar] Erro ao decodificar token:', e);
@@ -95,6 +106,27 @@ export default {
       return this.menuItems.filter((item) =>
         item.roles.includes(this.userRole)
       );
+    },
+  },
+  methods: {
+    resolveRoute(item) {
+      if (item.label === 'Dashboard') {
+        switch (this.userRole) {
+          case 'ROLE_ADMIN':
+            return '/dashboard';
+          case 'ROLE_COORDINATOR_FACULTY':
+            return '/dashboard-coordinator-faculty';
+          case 'ROLE_COORDINATOR_SCHOOL':
+            return '/dashboard-coordinator-school';
+          case 'ROLE_TEACHER':
+            return '/dashboard-professor';
+          case 'ROLE_STUDENT':
+            return '/dashboard-student';
+          default:
+            return '/login';
+        }
+      }
+      return item.route || '/login';
     },
   },
 };
