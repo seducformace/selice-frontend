@@ -164,6 +164,44 @@
                 </select>
               </div>
 
+              <!-- Campo de seleção de faculdades vinculadas (aparece apenas se tipo for escola) -->
+              <div
+                class="form-group"
+                v-if="currentCoordinator.institutionType === 'school'"
+              >
+                <label for="linked-colleges"
+                  >Faculdades Vinculadas (caso coordenador da escola)</label
+                >
+                <div class="inline-group">
+                  <select v-model="selectedCollegeId">
+                    <option disabled value="">Selecionar faculdade</option>
+                    <option
+                      v-for="college in collegesList"
+                      :key="college.id"
+                      :value="college.id"
+                    >
+                      {{ college.name }}
+                    </option>
+                  </select>
+                  <button type="button" @click="addLinkedCollege">
+                    Adicionar Faculdade
+                  </button>
+                </div>
+                <ul class="linked-colleges-list">
+                  <li
+                    v-for="(
+                      college, index
+                    ) in currentCoordinator.linkedColleges"
+                    :key="index"
+                  >
+                    {{ college.name }}
+                    <button type="button" @click="removeLinkedCollege(index)">
+                      Remover
+                    </button>
+                  </li>
+                </ul>
+              </div>
+
               <div class="form-group">
                 <label for="department">Curso Responsável</label>
                 <input
@@ -227,7 +265,9 @@ export default {
         status: 'Ativo',
         institutionId: null,
         institutionType: '',
+        linkedColleges: [],
       },
+      selectedCollegeId: '',
       coordinators: [],
       institutionsList: [],
       collegesList: [],
@@ -296,8 +336,9 @@ export default {
       const selected = this.institutionsList.find(
         (inst) => inst.id === this.currentCoordinator.institutionId
       );
-
       this.currentCoordinator.institutionType = selected?.type || '';
+      this.currentCoordinator.linkedColleges = [];
+      this.selectedCollegeId = '';
     },
 
     openModal() {
@@ -335,8 +376,10 @@ export default {
         status: selected.status,
         institutionId,
         institutionType,
+        linkedColleges: [],
       };
 
+      this.selectedCollegeId = '';
       this.isModalOpen = true;
     },
 
@@ -365,6 +408,13 @@ export default {
           payload.faculty = { id: this.currentCoordinator.institutionId };
         } else if (this.currentCoordinator.institutionType === 'school') {
           payload.school = { id: this.currentCoordinator.institutionId };
+
+          if (this.currentCoordinator.linkedColleges.length > 0) {
+            payload.linkedFaculties =
+              this.currentCoordinator.linkedColleges.map((item) => ({
+                id: item.id,
+              }));
+          }
         }
 
         if (!payload.faculty && !payload.school) {
@@ -415,7 +465,28 @@ export default {
         status: 'Ativo',
         institutionId: null,
         institutionType: '',
+        linkedColleges: [],
       };
+      this.selectedCollegeId = '';
+    },
+
+    addLinkedCollege() {
+      const selected = this.collegesList.find(
+        (c) => c.id === this.selectedCollegeId
+      );
+      if (
+        selected &&
+        !this.currentCoordinator.linkedColleges.find(
+          (c) => c.id === selected.id
+        )
+      ) {
+        this.currentCoordinator.linkedColleges.push(selected);
+      }
+      this.selectedCollegeId = '';
+    },
+
+    removeLinkedCollege(index) {
+      this.currentCoordinator.linkedColleges.splice(index, 1);
     },
   },
 

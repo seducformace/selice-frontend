@@ -17,9 +17,6 @@
       <div class="avatar">{{ userInitial }}</div>
       <div class="dropdown" v-if="menuOpen">
         <ul>
-          <li v-if="canViewStudents" @click="$router.push('/students')">
-            Estudantes
-          </li>
           <li @click="logout">Sair do sistema</li>
         </ul>
       </div>
@@ -106,10 +103,8 @@ export default {
             targetRoute = '/dashboard';
             break;
           case 'ROLE_COORDINATOR_FACULTY':
-            targetRoute = '/dashboard-coordinator-faculty';
-            break;
           case 'ROLE_COORDINATOR_SCHOOL':
-            targetRoute = '/dashboard-coordinator-school';
+            targetRoute = '/coordinator-dashboard';
             break;
           case 'ROLE_TEACHER':
             targetRoute = '/dashboard-professor';

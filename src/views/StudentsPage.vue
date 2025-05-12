@@ -11,7 +11,11 @@
 
         <div class="actions">
           <button class="add-button" @click="openModal" v-if="canAddStudents">
-            Adicionar Estudante
+            {{
+              role === 'ROLE_SCHOOL_COORDINATOR'
+                ? 'Localizar Aluno'
+                : 'Adicionar Estudante'
+            }}
           </button>
           <input
             v-model="searchQuery"
@@ -32,7 +36,7 @@
                 <th>Faculdade</th>
                 <th>Escola</th>
                 <th>Professor</th>
-                <th>Ações</th>
+                <th v-if="role !== 'ROLE_SCHOOL_COORDINATOR'">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -44,7 +48,10 @@
                 <td>{{ student.collegeName || '—' }}</td>
                 <td>{{ student.schoolName || '—' }}</td>
                 <td>{{ student.teacherName || '—' }}</td>
-                <td class="actions-buttons">
+                <td
+                  v-if="role !== 'ROLE_SCHOOL_COORDINATOR'"
+                  class="actions-buttons"
+                >
                   <button class="edit-button" @click="editStudent(index)">
                     Editar
                   </button>
@@ -57,12 +64,91 @@
           </table>
         </div>
 
+        <!-- MODAL -->
         <div v-if="isModalOpen" class="modal-overlay">
           <div class="modal-form-box">
             <h2>
-              {{ isEditing ? 'Editar Estudante' : 'Adicionar Estudante' }}
+              {{
+                isLinkMode
+                  ? 'Localizar Aluno'
+                  : isEditing
+                  ? 'Editar Estudante'
+                  : 'Adicionar Estudante'
+              }}
             </h2>
-            <form @submit.prevent="saveStudent" class="student-form">
+
+            <!-- LOCALIZAR ALUNO (Coordenador Escolar) -->
+            <div v-if="isLinkMode">
+              <div class="form-group">
+                <input
+                  v-model="searchQueryModal"
+                  type="text"
+                  placeholder="Buscar aluno por nome..."
+                />
+                <button @click="fetchStudentsPaginated(1)">Buscar</button>
+              </div>
+
+              <table class="students-table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>CPF</th>
+                    <th>E-mail</th>
+                    <th>Curso</th>
+                    <th>Faculdade</th>
+                    <th>Escola</th>
+                    <th>Professor</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="student in paginatedStudents"
+                    :key="student.id"
+                    :class="{
+                      'selected-row': selectedStudent?.id === student.id,
+                    }"
+                  >
+                    <td>{{ student.name }}</td>
+                    <td>{{ student.cpf }}</td>
+                    <td>{{ student.email }}</td>
+                    <td>{{ student.course }}</td>
+                    <td>{{ student.collegeName || '—' }}</td>
+                    <td>{{ student.schoolName || '—' }}</td>
+                    <td>{{ student.teacherName || '—' }}</td>
+                    <td>
+                      <button @click="selectStudent(student)">
+                        Selecionar
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div class="pagination">
+                <button @click="prevPage" :disabled="currentPage === 1">
+                  Anterior
+                </button>
+                <span>Página {{ currentPage }}</span>
+                <button @click="nextPage" :disabled="!hasMore">Próxima</button>
+              </div>
+
+              <div class="form-buttons">
+                <button
+                  v-if="selectedStudent"
+                  class="save-button"
+                  @click="confirmLinkStudent"
+                >
+                  Confirmar Vinculação
+                </button>
+                <button type="button" class="cancel-button" @click="closeModal">
+                  Fechar
+                </button>
+              </div>
+            </div>
+
+            <!-- FORMULÁRIO DE CADASTRO PADRÃO -->
+            <form v-else @submit.prevent="saveStudent" class="student-form">
               <div class="form-group">
                 <label for="name">Nome</label>
                 <input
@@ -168,7 +254,6 @@
     <Footer class="footer-fixed" />
   </div>
 </template>
-
 <script>
 import Footer from '@/components/Footer.vue';
 import { api } from '@/services/api';
@@ -176,11 +261,13 @@ import { api } from '@/services/api';
 export default {
   name: 'StudentsPage',
   components: { Footer },
+
   data() {
     return {
       searchQuery: '',
       isModalOpen: false,
       isEditing: false,
+      isLinkMode: false,
       currentStudent: {},
       students: [],
       role: '',
@@ -188,9 +275,17 @@ export default {
       colleges: [],
       schools: [],
       teachers: [],
-      availableCourses: [], // Cursos da faculdade selecionada
+      availableCourses: [],
+
+      // Modal de localização
+      paginatedStudents: [],
+      searchQueryModal: '',
+      currentPage: 1,
+      hasMore: false,
+      selectedStudent: null, // aluno selecionado para vínculo
     };
   },
+
   computed: {
     filteredStudents() {
       return this.students.filter((s) =>
@@ -198,14 +293,19 @@ export default {
       );
     },
     canAddStudents() {
-      return (
-        this.role === 'ADMIN' ||
-        this.role === 'ROLE_ADMIN' ||
-        this.role === 'COORDINATOR_FACULTY' ||
-        this.role === 'ROLE_COORDINATOR_FACULTY'
-      );
+      return [
+        'ROLE_ADMIN',
+        'ADMIN',
+        'ROLE_COORDINATOR_FACULTY',
+        'COORDINATOR_FACULTY',
+        'ROLE_COORDINATOR_SCHOOL',
+        'COORDINATOR_SCHOOL',
+        'ROLE_FACULTY_COORDINATOR',
+        'ROLE_SCHOOL_COORDINATOR',
+      ].includes(this.role);
     },
   },
+
   methods: {
     goToDashboard() {
       const token = localStorage.getItem('token');
@@ -215,12 +315,12 @@ export default {
         case 'ROLE_ADMIN':
           this.$router.push('/dashboard');
           break;
-        case 'ROLE_COORDINATOR':
-        case 'COORDINATOR_FACULTY':
+        case 'ROLE_COORDINATOR_FACULTY':
           this.$router.push('/dashboard-coordinator-faculty');
           break;
-        case 'ROLE_SCHOOL_COORDINATOR':
+        case 'ROLE_COORDINATOR_SCHOOL':
         case 'COORDINATOR_SCHOOL':
+        case 'ROLE_SCHOOL_COORDINATOR':
           this.$router.push('/dashboard-coordinator-school');
           break;
         case 'ROLE_TEACHER':
@@ -236,13 +336,22 @@ export default {
 
     openModal() {
       this.isModalOpen = true;
-      this.isEditing = false;
-      this.currentStudent = {};
-      this.availableCourses = [];
+
+      if (this.role === 'ROLE_SCHOOL_COORDINATOR') {
+        this.isLinkMode = true;
+        this.selectedStudent = null;
+        this.fetchStudentsPaginated(1);
+      } else {
+        this.isLinkMode = false;
+        this.isEditing = false;
+        this.currentStudent = {};
+        this.availableCourses = [];
+      }
     },
 
     closeModal() {
       this.isModalOpen = false;
+      this.selectedStudent = null;
     },
 
     async loadCourses() {
@@ -260,31 +369,32 @@ export default {
 
     editStudent(index) {
       this.isEditing = true;
-      this.currentStudent = { ...this.students[index] };
+      const selected = { ...this.students[index] };
 
-      const matchCollege = this.colleges.find(
-        (c) => c.name === this.currentStudent.collegeName
-      );
-      if (matchCollege) this.currentStudent.college = { id: matchCollege.id };
-
-      const matchSchool = this.schools.find(
-        (s) => s.name === this.currentStudent.schoolName
-      );
-      if (matchSchool) this.currentStudent.school = { id: matchSchool.id };
-
-      const matchTeacher = this.teachers.find(
-        (t) => t.name === this.currentStudent.teacherName
-      );
-      if (matchTeacher) this.currentStudent.teacher = { id: matchTeacher.id };
+      this.currentStudent = {
+        id: selected.id,
+        name: selected.name,
+        cpf: selected.cpf,
+        email: selected.email,
+        course: selected.course,
+        college: selected.collegeId ? { id: selected.collegeId } : null,
+        school: selected.schoolId ? { id: selected.schoolId } : null,
+        teacher: selected.teacherId ? { id: selected.teacherId } : null,
+      };
 
       this.isModalOpen = true;
-
-      if (matchCollege) {
+      this.isLinkMode = false;
+      if (this.currentStudent.college?.id) {
         this.loadCourses();
       }
     },
 
     async saveStudent() {
+      if (this.role === 'ROLE_SCHOOL_COORDINATOR') {
+        alert('Coordenadores escolares não podem cadastrar estudantes.');
+        return;
+      }
+
       try {
         if (this.isEditing && this.currentStudent.id) {
           await api.put(
@@ -312,63 +422,101 @@ export default {
     parseJwt(token) {
       if (!token) return {};
       try {
-        return JSON.parse(atob(token.split('.')[1]));
+        const decoded = JSON.parse(atob(token.split('.')[1]));
+        let role = decoded.role;
+
+        if (!role && Array.isArray(decoded.authorities)) {
+          const auth = decoded.authorities[0];
+          role = typeof auth === 'object' ? auth.authority : auth;
+        }
+
+        if (role && !role.startsWith('ROLE_')) {
+          role = `ROLE_${role}`;
+        }
+
+        return { ...decoded, role };
       } catch (e) {
+        console.error('Erro ao decodificar JWT:', e);
         return {};
       }
     },
 
     async fetchStudents() {
       try {
-        const params = {};
+        console.log('🔐 Role no fetch:', this.role);
+        const response = await api.get('/students');
 
-        if (this.role === 'ROLE_STUDENT') {
-          const response = await api.get('/students/me');
-          this.students = [response.data];
-          return;
-        }
-
-        if (this.role === 'ROLE_ADMIN' || this.role === 'ADMIN') {
-          const response = await api.get('/students');
-          this.students = response.data;
-          return;
-        }
-
-        if (
-          this.role === 'ROLE_COORDINATOR_FACULTY' ||
-          this.role === 'COORDINATOR_FACULTY'
-        ) {
-          const coordinator = await api.get('/coordinators/me');
-          if (coordinator.data?.college?.id) {
-            params.collegeId = coordinator.data.college.id;
-          }
-          const response = await api.get('/students', { params });
-          this.students = response.data;
-          return;
-        }
-
-        if (
-          this.role === 'ROLE_COORDINATOR_SCHOOL' ||
-          this.role === 'COORDINATOR_SCHOOL'
-        ) {
-          const coordinator = await api.get('/coordinators/me');
-          if (coordinator.data?.school?.id) {
-            params.schoolId = coordinator.data.school.id;
-          }
-          const response = await api.get('/students', { params });
-          this.students = response.data;
-          return;
-        }
-
-        this.students = [];
+        // Trata ambos os formatos: paginado e direto
+        this.students = response.data.content || response.data || [];
       } catch (error) {
         console.error('Erro ao carregar estudantes:', error);
         alert('Erro ao carregar dados dos estudantes.');
       }
     },
 
+    async fetchStudentsPaginated(page = 1) {
+      try {
+        const response = await api.get('/students', {
+          params: {
+            page,
+            size: 20,
+            name: this.searchQueryModal,
+          },
+        });
+
+        this.paginatedStudents = response.data.content || [];
+        this.currentPage = page;
+        this.hasMore = !response.data.last;
+      } catch (error) {
+        console.error('Erro ao buscar estudantes paginados:', error);
+      }
+    },
+
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.fetchStudentsPaginated(this.currentPage - 1);
+      }
+    },
+
+    nextPage() {
+      if (this.hasMore) {
+        this.fetchStudentsPaginated(this.currentPage + 1);
+      }
+    },
+
+    selectStudent(student) {
+      this.selectedStudent = student;
+    },
+
+    async confirmLinkStudent() {
+      if (!this.selectedStudent) {
+        alert('Selecione um aluno para vincular.');
+        return;
+      }
+      if (!this.coordinatorSchoolId) {
+        alert('ID da escola não identificado.');
+        return;
+      }
+
+      try {
+        await api.put(`/students/${this.selectedStudent.id}/assign-school`, {
+          schoolId: this.coordinatorSchoolId,
+        });
+        alert(`Aluno ${this.selectedStudent.name} vinculado com sucesso.`);
+        this.closeModal();
+        this.fetchStudents();
+      } catch (error) {
+        console.error('Erro ao vincular aluno à escola:', error);
+        alert('Falha ao vincular estudante.');
+      }
+    },
+
     async fetchCoordinatorData() {
-      if (this.role === 'COORDINATOR_SCHOOL') {
+      if (
+        this.role === 'ROLE_COORDINATOR_SCHOOL' ||
+        this.role === 'COORDINATOR_SCHOOL' ||
+        this.role === 'ROLE_SCHOOL_COORDINATOR'
+      ) {
         try {
           const res = await api.get('/coordinators/me');
           this.coordinatorSchoolId = res.data.school?.id;
@@ -389,20 +537,22 @@ export default {
         this.schools = schoolsRes.data;
         this.teachers = teachersRes.data;
       } catch (error) {
-        console.error(
-          'Erro ao carregar faculdades/escolas/professores:',
-          error
-        );
+        console.error('Erro ao carregar dados auxiliares:', error);
       }
     },
   },
 
-  async mounted() {
+  created() {
     const token = localStorage.getItem('token');
-    this.role = this.parseJwt(token)?.role;
-    await this.fetchCoordinatorData();
-    await this.fetchSelectData();
-    await this.fetchStudents();
+    const decoded = this.parseJwt(token);
+    this.role = decoded.role || '';
+
+    console.log('🎫 Token:', token);
+    console.log('👤 Role detectada:', this.role);
+
+    this.fetchStudents();
+    this.fetchSelectData();
+    this.fetchCoordinatorData();
   },
 };
 </script>

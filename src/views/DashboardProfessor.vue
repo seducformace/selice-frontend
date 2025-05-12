@@ -1,9 +1,9 @@
 <template>
   <div class="dashboard-professor">
-    <Header />
+    <!-- Header é global, não precisa ser incluído aqui -->
 
     <div class="content-wrapper">
-      <!-- Cabeçalho com botão home à esquerda e título centralizado -->
+      <!-- Cabeçalho com botão home e título -->
       <div class="header-bar">
         <div class="left">
           <button class="home-button" @click="goToHome">
@@ -13,10 +13,27 @@
         <h1 class="title">Painel do Professor</h1>
       </div>
 
-      <!-- Info do professor -->
-      <div class="professor-info" v-if="professor">
-        Professor: {{ professor.name }}<br />
-        CPF: {{ professor.cpf }}
+      <!-- Info do professor (modelo coordenador faculdade) -->
+      <div
+        v-if="professor"
+        style="
+          background-color: #f2f9ff;
+          padding: 15px;
+          border-radius: 8px;
+          margin: 20px;
+          line-height: 1.8;
+        "
+      >
+        <p><strong>Nome:</strong> {{ professor.name }}</p>
+        <p><strong>CPF:</strong> {{ professor.cpf }}</p>
+        <p><strong>Email:</strong> {{ professor.email }}</p>
+        <p v-if="professor.college?.name">
+          <strong>Faculdade:</strong> {{ professor.college.name }}
+        </p>
+        <p v-if="professor.schools?.length">
+          <strong>Escola(s):</strong>
+          {{ professor.schools.map((s) => s.name).join(', ') }}
+        </p>
       </div>
 
       <!-- Cards -->
@@ -48,18 +65,15 @@
 </template>
 
 <script>
-import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
+import { api } from '@/services/api';
 
 export default {
   name: 'DashboardProfessor',
-  components: { Header, Footer },
+  components: { Footer },
   data() {
     return {
-      professor: {
-        name: 'João da Silva',
-        cpf: '123.456.789-00',
-      },
+      professor: null,
     };
   },
   methods: {
@@ -67,11 +81,23 @@ export default {
       this.$router.push(`/${routeName}`);
     },
     goToHome() {
-      this.$router.push('/dashboard');
+      this.$router.push('/dashboard-professor');
     },
+    async fetchProfessor() {
+      try {
+        const response = await api.get('/teachers/me');
+        this.professor = response.data;
+      } catch (err) {
+        console.error('Erro ao carregar dados do professor:', err);
+      }
+    },
+  },
+  created() {
+    this.fetchProfessor();
   },
 };
 </script>
+
 <style scoped>
 .dashboard-professor {
   display: flex;
@@ -179,5 +205,11 @@ export default {
   font-size: 15px;
   font-weight: 600;
   color: #333;
+}
+.info-box {
+  background-color: #f0f8ff;
+  padding: 15px;
+  border-radius: 6px;
+  margin: 20px 0;
 }
 </style>
