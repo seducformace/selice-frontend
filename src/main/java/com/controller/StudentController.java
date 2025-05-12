@@ -3,148 +3,94 @@ package com.controller;
 import com.dto.StudentDTO;
 import com.model.Student;
 import com.service.StudentService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collections;
 import java.util.List;
 
-/**
- * Controlador REST para operações com estudantes.
- */
 @RestController
 @RequestMapping("/api/students")
-@Validated
-@CrossOrigin(origins = "http://localhost:8081", allowCredentials = "true")
 public class StudentController {
 
     @Autowired
     private StudentService studentService;
 
     /**
-     * Lista estudantes conforme a role do usuário autenticado:
-     *
-     * - ADMIN: vê todos, ou filtra por faculdade ou escola
-     * - COORDINATOR_FACULTY: vê apenas os alunos de sua faculdade
-     * - COORDINATOR_SCHOOL: vê apenas os alunos vinculados à sua escola
-     * - TEACHER: (⚠️ ainda não implementado aqui, mas previsto)
-     * - STUDENT: não acessa essa rota
+     * Retorna todos os estudantes com base no papel do usuário autenticado.
+     * Pode retornar de forma paginada ou completa, com ou sem filtro por nome.
      */
     @GetMapping
-    public ResponseEntity<List<StudentDTO>> getAllStudents(
-            @RequestParam(required = false) Long collegeId,
-            @RequestParam(required = false) Long schoolId,
-            @AuthenticationPrincipal UserDetails userDetails
+    public Object getStudents(
+            @RequestParam(required = false, defaultValue = "false") boolean paged,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "20") int size,
+            @RequestParam(required = false) String name
     ) {
-        try {
-            List<StudentDTO> students;
-
-            // Pega a role do usuário logado
-            String role = userDetails.getAuthorities().iterator().next().getAuthority();
-            String email = userDetails.getUsername();
-
-            // ADMIN pode ver tudo, com ou sem filtro por parâmetro
-            if ("ROLE_ADMIN".equals(role)) {
-                if (collegeId != null) {
-                    students = studentService.getStudentsByCollegeIdAsDTO(collegeId);
-                } else if (schoolId != null) {
-                    students = studentService.getStudentsBySchoolIdAsDTO(schoolId);
-                } else {
-                    students = studentService.getAllStudentsAsDTO();
-                }
-
-                // COORDENADOR DE FACULDADE vê apenas os estudantes vinculados à sua instituição
-            } else if ("ROLE_COORDINATOR_FACULTY".equals(role)) {
-                students = studentService.getStudentsByCoordinatorFaculty(email);
-
-                // COORDENADOR DE ESCOLA vê apenas os estudantes alocados em sua escola
-            } else if ("ROLE_COORDINATOR_SCHOOL".equals(role)) {
-                students = studentService.getStudentsByCoordinatorSchool(email);
-
-                // TEACHER (⚠️ Implementar no service caso necessário)
-            } else if ("ROLE_TEACHER".equals(role)) {
-                students = studentService.getStudentsByTeacher(email);
-
-                // Outras roles não têm acesso
-            } else {
-                students = Collections.emptyList();
-            }
-
-            return ResponseEntity.ok(students);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Student> getStudentById(@PathVariable Long id) {
-        return studentService.getStudentById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/hours")
-    public ResponseEntity<List<Student>> getStudentsByHours(@RequestParam int maxHours) {
-        try {
-            List<Student> students = studentService.getStudentsByHours(maxHours);
-            return students.isEmpty()
-                    ? ResponseEntity.noContent().build()
-                    : ResponseEntity.ok(students);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    @PostMapping
-    public ResponseEntity<Student> createStudent(@RequestBody Student student) {
-        try {
-            Student created = studentService.createStudent(student);
-            return ResponseEntity.status(201).body(created);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<Student> updateStudent(@PathVariable Long id, @RequestBody Student student) {
-        try {
-            Student updated = studentService.updateStudent(id, student);
-            return ResponseEntity.ok(updated);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteStudent(@PathVariable Long id) {
-        try {
-            studentService.deleteStudent(id);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+        if (paged) {
+            Pageable pageable = PageRequest.of(page, size);
+            return studentService.getAllStudentsPaginated(pageable, name);
+        } else {
+            return studentService.getAllStudentsAsDTO();
         }
     }
 
     /**
-     * Retorna os dados do estudante autenticado com base no token JWT.
+     * Retorna um estudante específico pelo ID.
      */
-    @GetMapping("/me")
-    public ResponseEntity<?> getAuthenticatedStudent() {
-        try {
-            Student student = studentService.getAuthenticatedStudent();
-            return ResponseEntity.ok(student);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body("Estudante autenticado não encontrado.");
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao buscar o estudante autenticado.");
+    @GetMapping("/{id}")
+    public Student getStudentById(@PathVariable Long id) {
+        return studentService.getStudentById(id)
+                .orElseThrow(() -> new RuntimeException("Estudante não encontrado com ID: " + id));
+    }
+
+    /**
+     * Cria um novo estudante.
+     */
+    @PostMapping
+    public Student createStudent(@RequestBody @Valid Student student) {
+        return studentService.createStudent(student);
+    }
+
+    /**
+     * Atualiza um estudante existente.
+     */
+    @PutMapping("/{id}")
+    public Student updateStudent(@PathVariable Long id, @RequestBody @Valid Student student) {
+        return studentService.updateStudent(id, student);
+    }
+
+    /**
+     * Exclui um estudante pelo ID.
+     */
+    @DeleteMapping("/{id}")
+    public void deleteStudent(@PathVariable Long id) {
+        studentService.deleteStudent(id);
+    }
+
+    /**
+     * Associa um estudante a uma escola (para coordenador escolar).
+     */
+    @PutMapping("/{id}/assign-school")
+    public void assignStudentToSchool(@PathVariable Long id, @RequestBody AssignSchoolRequest request) {
+        studentService.assignStudentToSchool(id, request.getSchoolId());
+    }
+
+    /**
+     * DTO interno para requisição de associação de escola.
+     */
+    public static class AssignSchoolRequest {
+        private Long schoolId;
+
+        public Long getSchoolId() {
+            return schoolId;
+        }
+
+        public void setSchoolId(Long schoolId) {
+            this.schoolId = schoolId;
         }
     }
 }

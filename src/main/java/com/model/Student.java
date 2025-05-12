@@ -24,23 +24,22 @@ public class Student {
     @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
 
-    // ✅ Curso agora referenciando a entidade Course corretamente
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "course", referencedColumnName = "id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_id")
     @JsonIgnoreProperties({"students", "faculty", "coordinator", "hibernateLazyInitializer", "handler"})
     private Course course;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "college_id")
     @JsonIgnoreProperties({"students", "coordinators", "hibernateLazyInitializer", "handler"})
     private Faculty college;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "school_id")
     @JsonIgnoreProperties({"students", "teachers", "coordinators", "hibernateLazyInitializer", "handler"})
     private School school;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "teacher_id")
     @JsonIgnoreProperties({"students", "schools", "hibernateLazyInitializer", "handler"})
     private Teacher teacher;
@@ -83,7 +82,6 @@ public class Student {
     }
 
     // Getters e Setters
-
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

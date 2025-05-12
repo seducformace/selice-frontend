@@ -14,9 +14,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Serviço responsável por compilar os dados gerais para os relatórios do sistema.
+ */
 @Service
 public class GeneralReportService {
 
@@ -34,19 +38,28 @@ public class GeneralReportService {
         this.studentRepository = studentRepository;
     }
 
+    /**
+     * Gera e retorna o relatório geral do sistema com dados de faculdades, escolas e estágios.
+     */
     @Transactional(readOnly = true)
     public GeneralReportDTO getGeneralReport() {
         List<Faculty> allFaculties = facultyRepository.findAll();
         List<School> allSchools = schoolRepository.findAll();
-        List<Student> allStudents = studentRepository.findAll();
+
+        // Converte Iterable<Student> para List<Student>
+        List<Student> allStudents = new ArrayList<>();
+        studentRepository.findAll().forEach(allStudents::add);
 
         int totalFaculties = allFaculties.size();
+
         int publicFaculties = (int) allFaculties.stream()
                 .filter(f -> "Pública".equalsIgnoreCase(f.getType()))
                 .count();
+
         int privateFaculties = (int) allFaculties.stream()
                 .filter(f -> "Privada".equalsIgnoreCase(f.getType()))
                 .count();
+
         int unassignedCoordinators = (int) allFaculties.stream()
                 .filter(f -> f.getCoordinators() == null || f.getCoordinators().isEmpty())
                 .count();
@@ -61,13 +74,7 @@ public class GeneralReportService {
         List<SchoolInternshipDTO> schoolInternships = allSchools.stream()
                 .map(school -> {
                     long count = allStudents.stream()
-                            .filter(st -> {
-                                try {
-                                    return st.getSchool() != null && st.getSchool().getId().equals(school.getId());
-                                } catch (Exception e) {
-                                    return false;
-                                }
-                            })
+                            .filter(st -> st.getSchool() != null && st.getSchool().getId().equals(school.getId()))
                             .count();
                     return new SchoolInternshipDTO(school.getName(), (int) count);
                 })

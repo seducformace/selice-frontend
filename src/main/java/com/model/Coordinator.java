@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
+
 /**
  * Entidade que representa um Coordenador.
  */
@@ -50,6 +52,15 @@ public class Coordinator {
     @JsonIgnoreProperties({"coordinators", "students", "hibernateLazyInitializer", "handler"})
     private Faculty faculty;
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "coordinator_linked_faculties",
+            joinColumns = @JoinColumn(name = "coordinator_id"),
+            inverseJoinColumns = @JoinColumn(name = "faculty_id")
+    )
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private List<Faculty> linkedFaculties;
+
     public Coordinator() {}
 
     public Coordinator(String name, String email, String cpf, String phoneNumber, String department, School school, Faculty faculty) {
@@ -89,6 +100,9 @@ public class Coordinator {
     public Faculty getFaculty() { return faculty; }
     public void setFaculty(Faculty faculty) { this.faculty = faculty; }
 
+    public List<Faculty> getLinkedFaculties() { return linkedFaculties; }
+    public void setLinkedFaculties(List<Faculty> linkedFaculties) { this.linkedFaculties = linkedFaculties; }
+
     @Override
     public String toString() {
         return "Coordinator{" +
@@ -101,6 +115,7 @@ public class Coordinator {
                 ", status='" + status + '\'' +
                 ", school=" + (school != null ? school.getName() : "Nenhuma") +
                 ", faculty=" + (faculty != null ? faculty.getName() : "Nenhuma") +
+                ", linkedFaculties=" + (linkedFaculties != null ? linkedFaculties.size() : 0) +
                 '}';
     }
 }

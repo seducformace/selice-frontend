@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-
+import java.util.Optional;
 @Repository
 public interface TeacherRepository extends JpaRepository<Teacher, Long> {
 
@@ -27,4 +27,5 @@ public interface TeacherRepository extends JpaRepository<Teacher, Long> {
     // ✅ Professores agrupados por disciplina (corrigido para campo real da entidade)
     @Query("SELECT t.discipline AS course, COUNT(t) AS total FROM Teacher t GROUP BY t.discipline")
     List<Object[]> countTeachersByCourse();
+    Optional<Teacher> findByEmail(String email);
 }

@@ -10,6 +10,8 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.DecodedJWT;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,6 +75,17 @@ public class TeacherService {
         userRepository.save(user);
 
         return savedTeacher;
+    }
+
+    /**
+     * Retorna os dados do professor logado, baseado no token JWT.
+     */
+    public Teacher getCurrentTeacherByToken(String token) {
+        DecodedJWT decodedJWT = JWT.decode(token);
+        String email = decodedJWT.getClaim("sub").asString(); // "sub" representa o e-mail no JWT
+
+        return teacherRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Professor não encontrado com e-mail: " + email));
     }
 
     /**
