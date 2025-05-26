@@ -1,7 +1,5 @@
 <template>
   <div class="student-dashboard">
-    <Header />
-
     <div class="content-wrapper">
       <!-- Cabeçalho -->
       <div class="header-bar">
@@ -56,7 +54,6 @@
 </template>
 
 <script>
-import Header from '@/components/Header.vue';
 import Footer from '@/components/Footer.vue';
 import { api } from '@/services/api';
 import { getDashboardRouteByRole } from '@/utils/redirectByRole';
@@ -64,7 +61,7 @@ import * as jwtDecode from 'jwt-decode';
 
 export default {
   name: 'DashboardStudent',
-  components: { Header, Footer },
+  components: { Footer },
   data() {
     return {
       student: null,
@@ -78,7 +75,6 @@ export default {
         const route = getDashboardRouteByRole(role);
         this.$router.push(route);
       } else {
-        // fallback para login se o token estiver ausente ou inválido
         this.$router.push('/login');
       }
     },

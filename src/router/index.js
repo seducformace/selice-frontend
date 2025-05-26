@@ -136,21 +136,16 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token');
   const isAuthenticated = token && token !== 'null' && token !== 'undefined';
 
-  // Se a rota exige autenticação e o usuário NÃO está autenticado
   if (to.meta.requiresAuth && !isAuthenticated) {
     return next('/login');
   }
 
-  // Se o usuário já está autenticado e tenta acessar o login
   if (to.path === '/login' && isAuthenticated) {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       const role =
         payload.role ||
-        (payload.authorities &&
-          (typeof payload.authorities[0] === 'object'
-            ? payload.authorities[0].authority
-            : payload.authorities[0]));
+        (payload.authorities && payload.authorities[0]?.authority);
 
       const roleRouteMap = {
         ROLE_ADMIN: '/dashboard',
@@ -161,12 +156,7 @@ router.beforeEach((to, from, next) => {
       };
 
       const redirectPath = roleRouteMap[role] || '/dashboard';
-
-      if (to.path !== redirectPath) {
-        return next(redirectPath);
-      } else {
-        return next();
-      }
+      return next(redirectPath);
     } catch (error) {
       console.error('[Router Guard] Erro ao decodificar token:', error);
       localStorage.removeItem('token');

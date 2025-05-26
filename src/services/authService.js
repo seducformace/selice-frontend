@@ -8,7 +8,7 @@ const API_URL = 'http://localhost:8080/api/authentication';
 export const authService = {
   /**
    * Realiza login com email e senha.
-   * Retorna um objeto contendo o token se o login for bem-sucedido.
+   * Retorna um objeto contendo o token e role se o login for bem-sucedido.
    */
   async login(email, password) {
     try {
@@ -27,25 +27,27 @@ export const authService = {
       let role = null;
       try {
         const decoded = jwt_decode(token);
-        role =
-          decoded.role ||
-          (decoded.authorities && decoded.authorities[0]?.authority);
+
+        // Tentativas de extração da role
+        if (decoded.role) {
+          role = decoded.role;
+        } else if (decoded.authorities?.length > 0) {
+          role = decoded.authorities[0]?.authority;
+        }
       } catch (decodeErr) {
-        console.warn(
-          '[authService] Não foi possível decodificar o token:',
-          decodeErr
-        );
+        console.warn('[authService] Erro ao decodificar token JWT:', decodeErr);
       }
 
-      // Salva o token, email e role localmente
+      // Salva informações no localStorage
       localStorage.setItem('token', token);
       localStorage.setItem('userEmail', email);
-      if (role) localStorage.setItem('role', role.toUpperCase());
+      if (role) {
+        localStorage.setItem('role', role.toUpperCase());
+      }
 
-      return { token };
+      return { token, role };
     } catch (error) {
       console.error('[authService] Erro ao fazer login:', error);
-
       throw new Error(
         error?.response?.data?.message ||
           error.message ||
@@ -75,5 +77,19 @@ export const authService = {
    */
   isAuthenticated() {
     return !!this.getToken();
+  },
+
+  /**
+   * Retorna a role do usuário autenticado.
+   */
+  getRole() {
+    return localStorage.getItem('role') || null;
+  },
+
+  /**
+   * Retorna o e-mail do usuário autenticado.
+   */
+  getUserEmail() {
+    return localStorage.getItem('userEmail') || null;
   },
 };

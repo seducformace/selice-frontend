@@ -60,6 +60,12 @@
                   </button>
                 </td>
               </tr>
+
+              <tr v-if="filteredStudents.length === 0">
+                <td colspan="8" style="text-align: center; padding: 12px">
+                  Nenhum estudante encontrado para sua instituição.
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -261,7 +267,6 @@ import { api } from '@/services/api';
 export default {
   name: 'StudentsPage',
   components: { Footer },
-
   data() {
     return {
       searchQuery: '',
@@ -276,16 +281,13 @@ export default {
       schools: [],
       teachers: [],
       availableCourses: [],
-
-      // Modal de localização
       paginatedStudents: [],
       searchQueryModal: '',
       currentPage: 1,
       hasMore: false,
-      selectedStudent: null, // aluno selecionado para vínculo
+      selectedStudent: null,
     };
   },
-
   computed: {
     filteredStudents() {
       return this.students.filter((s) =>
@@ -305,12 +307,10 @@ export default {
       ].includes(this.role);
     },
   },
-
   methods: {
     goToDashboard() {
       const token = localStorage.getItem('token');
       const role = this.parseJwt(token)?.role;
-
       switch (role) {
         case 'ROLE_ADMIN':
           this.$router.push('/dashboard');
@@ -333,10 +333,8 @@ export default {
           this.$router.push('/login');
       }
     },
-
     openModal() {
       this.isModalOpen = true;
-
       if (this.role === 'ROLE_SCHOOL_COORDINATOR') {
         this.isLinkMode = true;
         this.selectedStudent = null;
@@ -348,12 +346,10 @@ export default {
         this.availableCourses = [];
       }
     },
-
     closeModal() {
       this.isModalOpen = false;
       this.selectedStudent = null;
     },
-
     async loadCourses() {
       this.availableCourses = [];
       if (!this.currentStudent.college?.id) return;
@@ -361,53 +357,69 @@ export default {
         const response = await api.get(
           `/faculties/${this.currentStudent.college.id}/courses`
         );
-        this.availableCourses = response.data.map((c) => c.name);
+        this.availableCourses = response.data.map((c) => ({
+          id: c.id,
+          name: c.name,
+        }));
       } catch (error) {
         console.error('Erro ao carregar cursos da faculdade:', error);
       }
     },
-
     editStudent(index) {
       this.isEditing = true;
       const selected = { ...this.students[index] };
-
       this.currentStudent = {
         id: selected.id,
         name: selected.name,
         cpf: selected.cpf,
         email: selected.email,
-        course: selected.course,
+        course: selected.courseId ? { id: selected.courseId } : null,
         college: selected.collegeId ? { id: selected.collegeId } : null,
         school: selected.schoolId ? { id: selected.schoolId } : null,
         teacher: selected.teacherId ? { id: selected.teacherId } : null,
       };
-
       this.isModalOpen = true;
       this.isLinkMode = false;
       if (this.currentStudent.college?.id) {
         this.loadCourses();
       }
     },
-
     async saveStudent() {
       if (this.role === 'ROLE_SCHOOL_COORDINATOR') {
         alert('Coordenadores escolares não podem cadastrar estudantes.');
         return;
       }
 
+      const studentToSave = {
+        ...this.currentStudent,
+        course: this.currentStudent.course?.id
+          ? { id: this.currentStudent.course.id }
+          : null,
+        college: this.currentStudent.college?.id
+          ? { id: this.currentStudent.college.id }
+          : null,
+        school: this.currentStudent.school?.id
+          ? { id: this.currentStudent.school.id }
+          : null,
+        teacher: this.currentStudent.teacher?.id
+          ? { id: this.currentStudent.teacher.id }
+          : null,
+      };
+
       try {
         if (this.isEditing && this.currentStudent.id) {
-          await api.put(
-            `/students/${this.currentStudent.id}`,
-            this.currentStudent
-          );
+          await api.put(`/students/${this.currentStudent.id}`, studentToSave);
         } else {
-          await api.post('/students', this.currentStudent);
+          await api.post('/students', studentToSave);
         }
+
         this.closeModal();
         await this.fetchStudents();
       } catch (error) {
         console.error('Erro ao salvar estudante:', error);
+        alert(
+          'Não foi possível salvar o estudante. Verifique os dados preenchidos.'
+        );
       }
     },
 
@@ -418,36 +430,30 @@ export default {
         await this.fetchStudents();
       }
     },
-
     parseJwt(token) {
       if (!token) return {};
       try {
         const decoded = JSON.parse(atob(token.split('.')[1]));
         let role = decoded.role;
-
         if (!role && Array.isArray(decoded.authorities)) {
           const auth = decoded.authorities[0];
           role = typeof auth === 'object' ? auth.authority : auth;
         }
-
         if (role && !role.startsWith('ROLE_')) {
           role = `ROLE_${role}`;
         }
-
         return { ...decoded, role };
       } catch (e) {
         console.error('Erro ao decodificar JWT:', e);
         return {};
       }
     },
-
     async fetchStudents() {
       try {
-        console.log('🔐 Role no fetch:', this.role);
-        const response = await api.get('/students');
-
-        // Trata ambos os formatos: paginado e direto
-        this.students = response.data.content || response.data || [];
+        const response = await api.get('/students', {
+          params: { paged: true, page: 0, size: 20 },
+        });
+        this.students = response.data.content || [];
       } catch (error) {
         console.error('Erro ao carregar estudantes:', error);
         alert('Erro ao carregar dados dos estudantes.');
@@ -463,7 +469,6 @@ export default {
             name: this.searchQueryModal,
           },
         });
-
         this.paginatedStudents = response.data.content || [];
         this.currentPage = page;
         this.hasMore = !response.data.last;
@@ -471,23 +476,19 @@ export default {
         console.error('Erro ao buscar estudantes paginados:', error);
       }
     },
-
     prevPage() {
       if (this.currentPage > 1) {
         this.fetchStudentsPaginated(this.currentPage - 1);
       }
     },
-
     nextPage() {
       if (this.hasMore) {
         this.fetchStudentsPaginated(this.currentPage + 1);
       }
     },
-
     selectStudent(student) {
       this.selectedStudent = student;
     },
-
     async confirmLinkStudent() {
       if (!this.selectedStudent) {
         alert('Selecione um aluno para vincular.');
@@ -497,7 +498,6 @@ export default {
         alert('ID da escola não identificado.');
         return;
       }
-
       try {
         await api.put(`/students/${this.selectedStudent.id}/assign-school`, {
           schoolId: this.coordinatorSchoolId,
@@ -510,7 +510,6 @@ export default {
         alert('Falha ao vincular estudante.');
       }
     },
-
     async fetchCoordinatorData() {
       if (
         this.role === 'ROLE_COORDINATOR_SCHOOL' ||
@@ -525,7 +524,6 @@ export default {
         }
       }
     },
-
     async fetchSelectData() {
       try {
         const [facultiesRes, schoolsRes, teachersRes] = await Promise.all([
@@ -541,22 +539,19 @@ export default {
       }
     },
   },
-
   created() {
     const token = localStorage.getItem('token');
     const decoded = this.parseJwt(token);
     this.role = decoded.role || '';
 
-    console.log('🎫 Token:', token);
-    console.log('👤 Role detectada:', this.role);
-
-    this.fetchStudents();
     this.fetchSelectData();
-    this.fetchCoordinatorData();
+
+    this.fetchCoordinatorData().then(() => {
+      this.fetchStudents(); // Só chama após obter o ID da escola (se for o caso)
+    });
   },
 };
 </script>
-
 <style scoped>
 /* ===== LAYOUT GERAL ===== */
 .content-wrapper {
@@ -762,5 +757,24 @@ export default {
   bottom: 0;
   left: 0;
   z-index: 998;
+}
+/* Evita que selects com textos longos quebrem o layout */
+.form-group select {
+  max-width: 100%;
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+/* Garante que a linha de formulário não ultrapasse o modal */
+.student-form {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Evita campos exageradamente largos */
+.student-form .form-group input,
+.student-form .form-group select {
+  width: 100%;
+  box-sizing: border-box;
 }
 </style>
