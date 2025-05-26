@@ -5,7 +5,6 @@ import com.model.Student;
 import com.service.StudentService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
@@ -36,6 +35,30 @@ public class StudentController {
         } else {
             return studentService.getAllStudentsAsDTO();
         }
+    }
+
+    /**
+     * Retorna os estudantes vinculados a uma faculdade específica.
+     */
+    @GetMapping("/by-faculty")
+    public List<StudentDTO> getStudentsByFaculty(@RequestParam Long facultyId) {
+        return studentService.getStudentsByFaculty(facultyId);
+    }
+
+    /**
+     * Retorna os estudantes vinculados a uma escola específica.
+     */
+    @GetMapping("/by-school")
+    public List<StudentDTO> getStudentsBySchool(@RequestParam Long schoolId) {
+        return studentService.getStudentsBySchool(schoolId);
+    }
+
+    /**
+     * Retorna os dados do estudante autenticado.
+     */
+    @GetMapping("/me")
+    public StudentDTO getAuthenticatedStudentDTO() {
+        return studentService.getAuthenticatedStudentDTO();
     }
 
     /**
@@ -77,6 +100,20 @@ public class StudentController {
     @PutMapping("/{id}/assign-school")
     public void assignStudentToSchool(@PathVariable Long id, @RequestBody AssignSchoolRequest request) {
         studentService.assignStudentToSchool(id, request.getSchoolId());
+    }
+
+    /**
+     * Endpoint temporário de debug para buscar aluno pelo e-mail.
+     * Útil para validar se o cadastro e autenticação estão consistentes.
+     */
+    @GetMapping("/debug-user")
+    public StudentDTO debugUserByEmail(@RequestParam String email) {
+        return studentService.getStudentByEmailWithRelations(email)
+                .map(student -> {
+                    System.out.println("✅ Estudante localizado: " + student.getName());
+                    return studentService.convertToDTO(student);
+                })
+                .orElseThrow(() -> new RuntimeException("Estudante não encontrado com o e-mail: " + email));
     }
 
     /**

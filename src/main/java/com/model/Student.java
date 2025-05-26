@@ -24,6 +24,10 @@ public class Student {
     @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
 
+    // 🔐 Campo usado na autenticação com Spring Security
+    @Column(name = "password", nullable = false, length = 255)
+    private String password;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id")
     @JsonIgnoreProperties({"students", "faculty", "coordinator", "hibernateLazyInitializer", "handler"})
@@ -82,6 +86,7 @@ public class Student {
     }
 
     // Getters e Setters
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -93,6 +98,9 @@ public class Student {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
 
     public Course getCourse() { return course; }
     public void setCourse(Course course) { this.course = course; }

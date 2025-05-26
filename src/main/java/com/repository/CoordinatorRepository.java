@@ -12,19 +12,19 @@ import java.util.Optional;
 @Repository
 public interface CoordinatorRepository extends JpaRepository<Coordinator, Long> {
 
-    // Verifica se já existe coordenador com o e-mail informado
     boolean existsByEmail(String email);
 
-    // Verifica se já existe coordenador com o CPF informado
     boolean existsByCpf(String cpf);
 
-    // Buscar coordenador pelo e-mail, ignorando letras maiúsculas/minúsculas
     Optional<Coordinator> findByEmailIgnoreCase(String email);
 
-    // Coordenadores agrupados por curso
     @Query("SELECT c.department AS course, COUNT(c) AS total FROM Coordinator c GROUP BY c.department")
     List<CoordinatorCourseCount> getCoordinatorCountsByCourse();
 
-    // TODO: Se adicionar um campo de lista de cursos futuramente, reativar a consulta abaixo.
-    // long countByCoursesIsNull();
+    @Query("SELECT c FROM Coordinator c LEFT JOIN FETCH c.linkedFaculties WHERE LOWER(c.email) = LOWER(:email)")
+    Optional<Coordinator> findWithLinkedFaculties(String email);
+
+    // ✅ Novo método para carregar a escola junto com o coordenador
+    @Query("SELECT c FROM Coordinator c LEFT JOIN FETCH c.school WHERE LOWER(c.email) = LOWER(:email)")
+    Optional<Coordinator> findByEmailWithSchool(String email);
 }

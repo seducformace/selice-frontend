@@ -136,7 +136,17 @@ public class CoordinatorService {
 
     public Coordinator getAuthenticatedCoordinator() {
         String email = getAuthenticatedEmail();
-        return coordinatorRepository.findByEmailIgnoreCase(email)
+
+        return coordinatorRepository.findWithLinkedFaculties(email)
+                .map(coordinator -> {
+                    // Compatibiliza a leitura para componentes que esperam getFaculty()
+                    if ((coordinator.getFaculty() == null || coordinator.getFaculty().getId() == null) &&
+                            coordinator.getLinkedFaculties() != null &&
+                            !coordinator.getLinkedFaculties().isEmpty()) {
+                        coordinator.setFaculty(coordinator.getLinkedFaculties().get(0));
+                    }
+                    return coordinator;
+                })
                 .orElseThrow(() -> new RuntimeException("Coordenador não encontrado para o e-mail: " + email));
     }
 

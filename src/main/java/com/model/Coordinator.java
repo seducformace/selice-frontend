@@ -58,7 +58,7 @@ public class Coordinator {
             joinColumns = @JoinColumn(name = "coordinator_id"),
             inverseJoinColumns = @JoinColumn(name = "faculty_id")
     )
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({"coordinators", "hibernateLazyInitializer", "handler"})
     private List<Faculty> linkedFaculties;
 
     public Coordinator() {}
