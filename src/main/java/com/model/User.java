@@ -1,6 +1,8 @@
 package com.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -11,6 +13,7 @@ import jakarta.validation.constraints.NotBlank;
  */
 @Entity
 @Table(name = "users")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class User {
 
     @Id
@@ -27,18 +30,19 @@ public class User {
     private String email;
 
     @NotBlank(message = "A senha é obrigatória.")
-    @JsonIgnore // Garante que a senha não vaze no JSON de resposta
+    @JsonIgnore // Garante que a senha não apareça em respostas JSON
     @Column(name = "password", nullable = false)
     private String password;
 
     /**
-     * Papel do usuário (como ADMIN, COORDINATOR_FACULTY, etc).
-     * Não incluir o prefixo ROLE_ aqui — ele será adicionado durante a autenticação.
+     * Papel do usuário (ex.: ADMIN, PROFESSOR, COORDINATOR_FACULTY).
+     * O prefixo "ROLE_" será adicionado dinamicamente durante a autenticação.
      */
     @NotBlank(message = "A role é obrigatória.")
     @Column(name = "role", nullable = false)
     private String role;
 
+    // Construtores
     public User() {}
 
     public User(String name, String email, String password, String role) {
@@ -79,6 +83,7 @@ public class User {
 
     public void setRole(String role) { this.role = role; }
 
+    // Exclui a senha do log para segurança
     @Override
     public String toString() {
         return "User{" +

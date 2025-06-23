@@ -5,7 +5,7 @@ public class PasswordHashValidator {
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
         // Senha original
-        String rawPassword = "123456";
+        String rawPassword = "123";
 
         // Hash armazenado no banco
         String encodedPassword = "$2a$10$eBmn0m.CWro0Ga6G6FTRle3GbV1RO7NeiLl27FNS0LlRI/viPqoG2";

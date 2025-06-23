@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -30,9 +30,7 @@ public class SecurityConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
-    /**
-     * Filtro de autenticação JWT customizado.
-     */
+    // Filtro JWT: responsável por interceptar e validar o token
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(
             UserDetailsService userDetailsService,
@@ -40,9 +38,7 @@ public class SecurityConfig {
         return new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService);
     }
 
-    /**
-     * Configura a cadeia de filtros de segurança HTTP.
-     */
+    // Configura toda a segurança da aplicação
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
@@ -57,19 +53,19 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/authentication/login",
+                                "/api/auth/login",
+                                "/api/auth/debug-user", // Corrigido: endpoint protegido anteriormente
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/error",
                                 "/api/faculties",
                                 "/api/faculties/**",
                                 "/api/schools",
-                                "/api/schools/**",
-                                "/debug-user"
+                                "/api/schools/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
-                .authenticationProvider(authenticationProvider(userDetailsService)) // ✅ LINHA ESSENCIAL
+                .authenticationProvider(authenticationProvider(userDetailsService))
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .formLogin(form -> form.disable())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -78,27 +74,14 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * Bean de AuthenticationManager.
-     */
+    // AuthenticationManager com provider padrão
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        logger.info("AuthenticationManager configurado.");
-        return authenticationConfiguration.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(UserDetailsService userDetailsService) {
+        logger.info("AuthenticationManager configurado com DaoAuthenticationProvider.");
+        return new ProviderManager(authenticationProvider(userDetailsService));
     }
 
-    /**
-     * Codificador de senhas usando BCrypt.
-     */
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        logger.info("Utilizando BCryptPasswordEncoder.");
-        return new BCryptPasswordEncoder();
-    }
-
-    /**
-     * Provider de autenticação que usa UserDetailsService e PasswordEncoder.
-     */
+    // Provider para validação de credenciais
     @Bean
     public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService) {
         logger.info("Configurando AuthenticationProvider com UserDetailsService.");
@@ -108,15 +91,23 @@ public class SecurityConfig {
         return provider;
     }
 
-    /**
-     * Configuração de CORS para permitir requisições do frontend.
-     */
+    // Encoder de senhas: BCrypt
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        logger.info("Utilizando BCryptPasswordEncoder.");
+        return new BCryptPasswordEncoder();
+    }
+
+    // Configuração do CORS para permitir o frontend acessar a API
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         logger.info("Configurando CORS...");
 
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("http://localhost:8081"));
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:8081", // Frontend Vue.js
+                "http://localhost:4300"  // Frontend Angular
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

@@ -51,25 +51,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         try {
-            // Extrai o token do cabeçalho
+            // Extrai o token do cabeçalho Authorization
             String token = jwtTokenProvider.resolveToken(request);
 
-            // Verifica se já existe autenticação no contexto
+            // Valida o token e garante que não há autenticação ativa no contexto
             if (token != null && jwtTokenProvider.validateToken(token)
                     && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                // Extrai o email do token
+                // Extrai o nome de usuário (geralmente e-mail)
                 String username = jwtTokenProvider.extractUsername(token);
 
-                // Busca o usuário no banco
+                // Busca os detalhes do usuário no banco de dados
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                 if (userDetails != null) {
-                    // Cria autenticação com base nas permissões do usuário
+                    // Cria o objeto de autenticação
                     Authentication authentication = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities());
 
-                    // Registra o contexto de segurança
+                    // Cria e define o contexto de segurança
                     SecurityContext context = SecurityContextHolder.createEmptyContext();
                     context.setAuthentication(authentication);
                     SecurityContextHolder.setContext(context);
@@ -90,7 +90,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             logger.error("Erro inesperado durante autenticação JWT: {}", e.getMessage(), e);
         }
 
-        // Continua o fluxo da requisição
+        // Continua o fluxo da requisição normalmente
         chain.doFilter(request, response);
     }
 }

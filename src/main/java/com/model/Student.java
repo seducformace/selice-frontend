@@ -1,11 +1,15 @@
 package com.model;
 
 import com.enums.InternshipStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entidade que representa um estudante no sistema SELICE.
+ */
 @Entity
 @Table(name = "students")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -24,7 +28,7 @@ public class Student {
     @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
 
-    // 🔐 Campo usado na autenticação com Spring Security
+    @JsonIgnore // Garante segurança ao expor dados via API
     @Column(name = "password", nullable = false, length = 255)
     private String password;
 
@@ -85,8 +89,7 @@ public class Student {
         this.updatedAt = LocalDateTime.now();
     }
 
-    // Getters e Setters
-
+    // Getters e Setters (mantidos conforme original)
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

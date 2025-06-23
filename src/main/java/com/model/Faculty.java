@@ -110,10 +110,23 @@ public class Faculty {
     }
 
     public void setType(String type) {
-        if (type == null || (!type.equalsIgnoreCase("PÚBLICA") && !type.equalsIgnoreCase("PRIVADA"))) {
-            throw new IllegalArgumentException("O tipo deve ser 'PÚBLICA' ou 'PRIVADA'.");
+        if (type == null) {
+            throw new IllegalArgumentException("O tipo da faculdade não pode ser nulo.");
         }
-        this.type = type.toUpperCase();
+
+        // Ajuste de compatibilidade com o frontend Angular
+        switch (type.toUpperCase()) {
+            case "PRIVATE":
+            case "PRIVADA":
+                this.type = "PRIVADA";
+                break;
+            case "PUBLIC":
+            case "PÚBLICA":
+                this.type = "PÚBLICA";
+                break;
+            default:
+                throw new IllegalArgumentException("O tipo deve ser 'PÚBLICA' ou 'PRIVADA'.");
+        }
     }
 
     public String getStatus() {

@@ -13,6 +13,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,36 +37,44 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         this.studentRepository = studentRepository;
     }
 
+    /**
+     * Tenta carregar um usuário autenticável (User ou Student) com base no e-mail.
+     * Se encontrado, devolve um objeto UserDetails com as devidas permissões.
+     */
     @Override
     @Transactional
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        logger.info("🟡 Tentando autenticar com email: {}", email);
+        logger.info("🔍 Tentando autenticar com email: {}", email);
 
-        // 🔍 Tenta encontrar como User
-        User user = userRepository.findByEmailIgnoreCase(email).orElse(null);
-        if (user != null) {
-            logger.info("✅ Usuário encontrado: {}", user.getEmail());
-            return org.springframework.security.core.userdetails.User
-                    .withUsername(user.getEmail())
-                    .password(user.getPassword())
-                    .authorities(user.getRole().toUpperCase())
-                    .build();
-        }
+        return userRepository.findByEmailIgnoreCase(email)
+                .map(user -> {
+                    logger.info("✅ Usuário encontrado: {}", user.getEmail());
+                    String role = "ROLE_" + user.getRole().toUpperCase(); // Sempre prefixar ROLE_
 
-        // 🔍 Tenta encontrar como Student
-        logger.info("🟡 Usuário não encontrado, tentando autenticar como aluno...");
-        Student student = studentRepository.findByEmail(email).orElse(null);
-        if (student != null) {
-            logger.info("✅ Aluno encontrado: {}", student.getEmail());
-            return org.springframework.security.core.userdetails.User
-                    .withUsername(student.getEmail())
-                    .password(student.getPassword())
-                    .authorities(Collections.singleton(new SimpleGrantedAuthority("ROLE_STUDENT")))
-                    .build();
-        }
+                    // 🔐 DEBUG: Verificação manual de senha "123" contra o hash armazenado
+                    BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+                    boolean passwordMatches = encoder.matches("123", user.getPassword());
+                    logger.debug("🔐 [DEBUG MANUAL] Senha fornecida (123) confere com hash do banco? {}", passwordMatches);
+                    logger.debug("🔐 Hash armazenado no banco: {}", user.getPassword());
 
-        // ❌ Nenhum encontrado
-        logger.warn("⛔ Nenhum usuário ou aluno encontrado com o email: {}", email);
-        throw new UsernameNotFoundException("Usuário ou aluno não encontrado com o email: " + email);
+                    return org.springframework.security.core.userdetails.User
+                            .withUsername(user.getEmail())
+                            .password(user.getPassword())
+                            .authorities(Collections.singleton(new SimpleGrantedAuthority(role)))
+                            .build();
+                })
+                .orElseGet(() -> studentRepository.findByEmail(email)
+                        .map(student -> {
+                            logger.info("✅ Aluno encontrado: {}", student.getEmail());
+                            return org.springframework.security.core.userdetails.User
+                                    .withUsername(student.getEmail())
+                                    .password(student.getPassword())
+                                    .authorities(Collections.singleton(new SimpleGrantedAuthority("ROLE_STUDENT")))
+                                    .build();
+                        })
+                        .orElseThrow(() -> {
+                            logger.warn("⛔ Nenhum usuário ou aluno encontrado com o email: {}", email);
+                            return new UsernameNotFoundException("Usuário ou aluno não encontrado com o email: " + email);
+                        }));
     }
 }
